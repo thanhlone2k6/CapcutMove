@@ -1,5 +1,5 @@
-appId: com.thanhnguyen.capcutprojectcollector
-productName: CapCut Project Collector
+appId: com.thanhnguyen.capcutmove
+productName: CapCutMove
 directories:
   buildResources: build
   output: release
@@ -13,10 +13,10 @@ files:
 asarUnpack:
   - resources/**
 win:
-  executableName: CapCutProjectCollector
+  executableName: CapCutMove
   target: nsis
 nsis:
-  artifactName: CapCutProjectCollector-${version}-Setup.${ext}
+  artifactName: CapCutMove-${version}-Setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always

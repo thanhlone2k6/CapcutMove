@@ -1,6 +1,6 @@
 {
-  "name": "capcut-project-collector",
-  "productName": "CapCut Project Collector",
+  "name": "capcut-move",
+  "productName": "CapCutMove",
   "version": "0.1.0",
   "description": "CapCut Project Collector - Move projects easily",
   "main": "./out/main/index.js",
