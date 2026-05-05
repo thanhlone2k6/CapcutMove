@@ -4,9 +4,6 @@ import { is } from '@electron-toolkit/utils'
 import axios from 'axios'
 
 export function setupAutoUpdater(mainWindow: BrowserWindow) {
-  // Only check for updates in production
-  if (is.dev) return
-
   autoUpdater.autoDownload = true
   autoUpdater.autoInstallOnAppQuit = true
 
@@ -40,9 +37,11 @@ export function setupAutoUpdater(mainWindow: BrowserWindow) {
       const latestVersion = response.data.tag_name.replace('v', '')
 
       if (latestVersion !== currentVersion) {
-        // New version found, now let autoUpdater handle the download
+        // New version found
         sendStatusToWindow('available', { version: latestVersion })
-        await autoUpdater.checkForUpdates()
+        if (!is.dev) {
+          await autoUpdater.checkForUpdates()
+        }
       } else {
         if (manual) sendStatusToWindow('not-available')
       }
@@ -50,7 +49,11 @@ export function setupAutoUpdater(mainWindow: BrowserWindow) {
       console.error('Update check failed:', error)
       // Fallback to standard autoUpdater if API fails
       try {
-        await autoUpdater.checkForUpdates()
+        if (!is.dev) {
+          await autoUpdater.checkForUpdates()
+        } else {
+          if (manual) sendStatusToWindow('error', 'Lỗi kết nối GitHub (Dev Mode)')
+        }
       } catch (innerError: any) {
         if (manual) sendStatusToWindow('error', 'Không thể kết nối máy chủ cập nhật.')
       }
