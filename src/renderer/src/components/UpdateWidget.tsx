@@ -67,7 +67,7 @@ export default function UpdateWidget() {
             <RefreshCw size={20} className={status === 'checking' ? 'spin' : ''} />
           </button>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>App Version v2.3.0</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>App Version v3.0.0</div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
               {status === 'idle' && 'Check for latest updates'}
               {status === 'checking' && 'Đang kiểm tra cập nhật...'}

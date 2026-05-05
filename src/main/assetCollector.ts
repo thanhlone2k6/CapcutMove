@@ -7,6 +7,7 @@ import { processFont, FontReportItem } from './fontCollector'
 export interface AssetMapItem {
   id: string
   originalPath: string
+  absolutePath: string
   collectedRelativePath: string
   type: AssetType
   sourceFiles: string[]
@@ -94,12 +95,21 @@ export async function scanAssets(projectPath: string): Promise<ScanResult> {
       continue
     }
 
+    let absolutePath = rawPath
+    if (!path.isAbsolute(rawPath)) {
+      if (rawPath.startsWith('./')) {
+        absolutePath = path.resolve(projectPath, rawPath.substring(2))
+      } else {
+        absolutePath = path.resolve(projectPath, rawPath)
+      }
+    }
+
     let exists = false
     let sizeBytes = 0
 
     try {
-      if (await fs.pathExists(rawPath)) {
-        const stats = await fs.stat(rawPath)
+      if (await fs.pathExists(absolutePath)) {
+        const stats = await fs.stat(absolutePath)
         if (stats.isFile()) {
           exists = true
           sizeBytes = stats.size
@@ -128,6 +138,7 @@ export async function scanAssets(projectPath: string): Promise<ScanResult> {
     const item: AssetMapItem = {
       id: `asset_${fileIdCounter++}`,
       originalPath: rawPath,
+      absolutePath,
       collectedRelativePath,
       type,
       sourceFiles: [source],

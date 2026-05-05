@@ -63,7 +63,7 @@ async function calculateTotalSize(params: ExportParams): Promise<number> {
   } catch (_) {}
   const seen = new Set<string>()
   for (const a of params.scanResult.assets) {
-    let sp = a.originalPath
+    let sp = a.absolutePath
     if (!a.exists && mr[a.id]) sp = mr[a.id]
     const ap = path.resolve(sp)
     if (seen.has(ap)) continue
@@ -171,23 +171,30 @@ export async function exportZip(
     })
 
     archive.pipe(output)
-    archive.directory(projectPath, `project/${projectName}`)
+    archive.directory(projectPath, `project/${projectName}`, (data: any) => {
+      // Ignore assets_collected inside the project directory, as we collect them separately
+      const normName = data.name.replace(/\\/g, '/')
+      if (normName === 'assets_collected' || normName.startsWith('assets_collected/')) {
+        return false
+      }
+      return data
+    })
 
     const pathMap: any[] = []
     const missingFiles: any[] = []
     const foundFiles: any[] = []
 
     for (const asset of scanResult.assets) {
-      let src = asset.originalPath
+      let src = asset.absolutePath
       let isManual = false
       if (!asset.exists && mr[asset.id]) { src = mr[asset.id]; isManual = true }
       const exists = fs.existsSync(src)
       if (exists && asset.collectedRelativePath) {
         archive.file(src, { name: asset.collectedRelativePath })
         pathMap.push({ originalPath: asset.originalPath, collectedRelativePath: asset.collectedRelativePath, type: asset.type, exists: true, status: isManual ? 'manual_resolved' : 'found' })
-        foundFiles.push(asset.originalPath)
+        foundFiles.push(asset.absolutePath)
       } else {
-        missingFiles.push(asset.originalPath)
+        missingFiles.push(asset.absolutePath)
         pathMap.push({ originalPath: asset.originalPath, exists: false, status: 'missing' })
       }
     }
