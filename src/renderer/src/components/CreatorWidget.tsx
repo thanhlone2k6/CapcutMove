@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Coffee, Copy, Check } from 'lucide-react'
+import { Coffee, Copy, Check, ChevronRight, ChevronLeft } from 'lucide-react'
 import facebookIcon from '../assets/facebook.webp'
 import donateImage from '../assets/donate.jpg'
 import instagramIcon from '../assets/instagram.webp'
@@ -11,6 +11,7 @@ interface CreatorWidgetProps {
 
 const CreatorWidget: React.FC<CreatorWidgetProps> = ({ onDonateClick }) => {
   const [showZaloToast, setShowZaloToast] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   const handleFBClick = () => {
     window.api.openExternal('https://www.facebook.com/realthanhng/')
@@ -27,8 +28,20 @@ const CreatorWidget: React.FC<CreatorWidgetProps> = ({ onDonateClick }) => {
   }
 
   return (
-    <>
-      <div className="branding-badge">
+    <div className={`branding-badge ${isCollapsed ? 'collapsed' : ''}`}>
+      <div 
+        className="branding-items-container" 
+        style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: 8,
+          opacity: isCollapsed ? 0 : 1,
+          maxHeight: isCollapsed ? 0 : 500,
+          overflow: 'hidden',
+          transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+          pointerEvents: isCollapsed ? 'none' : 'auto'
+        }}
+      >
         {/* Facebook */}
         <div className="creator-item build-by" onClick={handleFBClick}>
           {facebookIcon ? (
@@ -71,7 +84,20 @@ const CreatorWidget: React.FC<CreatorWidgetProps> = ({ onDonateClick }) => {
           )}
         </div>
       </div>
-    </>
+
+      <button 
+        className="branding-toggle-btn" 
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        title={isCollapsed ? "Hiện thông tin" : "Thu gọn"}
+        style={{ marginTop: isCollapsed ? 0 : 8 }}
+      >
+        {isCollapsed ? (
+          <ChevronLeft size={22} />
+        ) : (
+          <ChevronLeft size={22} style={{ transform: 'rotate(90deg)' }} />
+        )}
+      </button>
+    </div>
   )
 }
 

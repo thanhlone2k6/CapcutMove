@@ -3,6 +3,7 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { registerIpcHandlers } from './ipcHandlers'
+import { setupAutoUpdater } from './updateService'
 import fs from 'fs-extra'
 
 function createWindow(): void {
@@ -41,7 +42,6 @@ function createWindow(): void {
   registerIpcHandlers(mainWindow)
   
   // Initialize auto updater
-  const { setupAutoUpdater } = require('./updateService')
   setupAutoUpdater(mainWindow)
 }
 

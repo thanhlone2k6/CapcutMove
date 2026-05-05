@@ -55,6 +55,15 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 8px;
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.branding-badge.collapsed {
+  gap: 0;
 }
 
 .creator-item, .donate-btn {
@@ -85,9 +94,9 @@
 }
 
 .branding-toggle-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  border-radius: 12px;
   background: var(--bg-surface-elevated);
   border: 1px solid var(--border);
   color: var(--text-secondary);
@@ -95,15 +104,16 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: var(--transition);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  margin-right: 12px; /* Align with items */
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
 }
 
 .branding-toggle-btn:hover {
-  background: var(--bg-surface-hover);
-  color: var(--accent-purple);
-  transform: scale(1.1);
+  background: var(--accent-purple);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(168, 85, 247, 0.4);
 }
 
 /* Specific button widths/styles */
@@ -471,6 +481,11 @@ h3 {
 
 .spin {
   animation: spin 1s linear infinite;
+}
+
+.update-check-btn:hover:not(:disabled) {
+  background: rgba(168, 85, 247, 0.2) !important;
+  transform: scale(1.05);
 }
 
 .btn-primary {

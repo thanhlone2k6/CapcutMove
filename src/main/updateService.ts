@@ -40,7 +40,19 @@ export function setupAutoUpdater(mainWindow: BrowserWindow) {
 
   // IPC Handlers
   ipcMain.handle('check-for-updates', async () => {
-    return await autoUpdater.checkForUpdatesAndNotify()
+    try {
+      // Add a timeout to avoid infinite spinning
+      const timeout = setTimeout(() => {
+        sendStatusToWindow('error', 'Kiểm tra quá lâu, vui lòng thử lại sau.')
+      }, 15000)
+
+      const result = await autoUpdater.checkForUpdatesAndNotify()
+      clearTimeout(timeout)
+      return result
+    } catch (err: any) {
+      sendStatusToWindow('error', err.message)
+      return null
+    }
   })
 
   ipcMain.handle('restart-app-to-update', () => {

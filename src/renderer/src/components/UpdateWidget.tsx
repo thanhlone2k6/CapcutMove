@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
-import { RefreshCw, ArrowUpCircle } from 'lucide-react'
+import { RefreshCw, ArrowUpCircle, CheckCircle, XCircle } from 'lucide-react'
 
 export default function UpdateWidget() {
   const [updateInfo, setUpdateInfo] = useState<any>(null)
   const [status, setStatus] = useState<'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error'>('idle')
   const [progress, setProgress] = useState<any>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [showResultToast, setShowResultToast] = useState(false)
+  const [resultType, setResultType] = useState<'success' | 'info' | 'error'>('info')
 
   useEffect(() => {
     const unsub = window.api.onUpdateStatus((info: any) => {
@@ -14,8 +16,18 @@ export default function UpdateWidget() {
         setProgress(info.data)
       } else if (info.status === 'available') {
         setUpdateInfo(info.data)
+        setResultType('success')
+        setShowResultToast(true)
+        setTimeout(() => setShowResultToast(false), 5000)
+      } else if (info.status === 'not-available') {
+        setResultType('info')
+        setShowResultToast(true)
+        setTimeout(() => setShowResultToast(false), 3000)
       } else if (info.status === 'error') {
         setErrorMessage(info.data)
+        setResultType('error')
+        setShowResultToast(true)
+        setTimeout(() => setShowResultToast(false), 5000)
       }
     })
     return () => unsub()
@@ -35,9 +47,25 @@ export default function UpdateWidget() {
     <div className="update-widget card" style={{ padding: '12px 16px', marginBottom: 16, border: '1px solid var(--border)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ background: 'rgba(168, 85, 247, 0.1)', padding: 8, borderRadius: 8, color: 'var(--accent-purple)' }}>
-            <ArrowUpCircle size={20} />
-          </div>
+          <button 
+            onClick={handleCheckUpdate}
+            disabled={status === 'checking' || status === 'downloading'}
+            style={{ 
+              background: 'rgba(168, 85, 247, 0.1)', 
+              padding: 8, 
+              borderRadius: 8, 
+              color: 'var(--accent-purple)',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.3s ease'
+            }}
+            className="update-check-btn"
+          >
+            <RefreshCw size={20} className={status === 'checking' ? 'spin' : ''} />
+          </button>
           <div>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>App Version v0.1.1</div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
@@ -52,18 +80,9 @@ export default function UpdateWidget() {
           </div>
         </div>
 
-        {status === 'downloaded' ? (
+        {status === 'downloaded' && (
           <button className="btn btn-primary" onClick={handleRestart} style={{ padding: '6px 12px', fontSize: 12 }}>
             <RefreshCw size={14} /> Restart to Update
-          </button>
-        ) : (
-          <button 
-            className="btn btn-icon" 
-            onClick={handleCheckUpdate} 
-            disabled={status === 'checking' || status === 'downloading'}
-            title="Check for updates"
-          >
-            <RefreshCw size={16} className={status === 'checking' ? 'spin' : ''} />
           </button>
         )}
       </div>
@@ -72,6 +91,35 @@ export default function UpdateWidget() {
         <div style={{ marginTop: 10 }}>
           <div className="progress-bar" style={{ height: 4 }}>
             <div className="progress-fill" style={{ width: `${progress?.percent || 0}%` }}></div>
+          </div>
+        </div>
+      )}
+
+      {/* Result Popups/Toasts */}
+      {showResultToast && (
+        <div className={`update-toast ${resultType}`} style={{
+          position: 'fixed',
+          bottom: 24,
+          right: 24,
+          background: resultType === 'success' ? '#10b981' : resultType === 'error' ? '#ef4444' : 'var(--bg-surface-elevated)',
+          color: resultType === 'info' ? 'var(--text-primary)' : '#fff',
+          padding: '12px 20px',
+          borderRadius: 12,
+          boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          zIndex: 9999,
+          animation: 'toast-in 0.3s ease-out',
+          border: resultType === 'info' ? '1px solid var(--border)' : 'none'
+        }}>
+          {resultType === 'success' && <ArrowUpCircle size={20} />}
+          {resultType === 'info' && <CheckCircle size={20} style={{ color: '#10b981' }} />}
+          {resultType === 'error' && <XCircle size={20} />}
+          <div style={{ fontSize: 13, fontWeight: 600 }}>
+            {resultType === 'success' && `Có bản cập nhật mới v${updateInfo?.version}!`}
+            {resultType === 'info' && 'Bạn đang sử dụng phiên bản mới nhất.'}
+            {resultType === 'error' && `Lỗi: ${errorMessage}`}
           </div>
         </div>
       )}
