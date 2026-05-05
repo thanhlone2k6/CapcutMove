@@ -3,6 +3,7 @@ import ExportProject from './pages/ExportProject'
 import ImportProject from './pages/ImportProject'
 import CreatorWidget from './components/CreatorWidget'
 import SupportModal from './components/SupportModal'
+import UpdateWidget from './components/UpdateWidget'
 import './index.css'
 
 function App(): React.JSX.Element {
@@ -41,6 +42,7 @@ function App(): React.JSX.Element {
       </div>
 
       <div className="main-content">
+        <UpdateWidget />
         <div style={{ display: activeTab === 'export' ? 'block' : 'none', height: '100%' }}>
           <ExportProject settings={settings} onSettingsChange={setSettings} />
         </div>

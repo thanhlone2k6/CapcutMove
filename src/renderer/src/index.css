@@ -459,9 +459,18 @@ h3 {
   border-color: var(--text-muted);
 }
 
-.btn:disabled {
+.btn-icon:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
 }
 
 .btn-primary {

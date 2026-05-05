@@ -35,6 +35,15 @@ const api = {
     const subscription = (_event: any, info: any) => callback(info)
     ipcRenderer.on('progress-update', subscription)
     return () => ipcRenderer.removeListener('progress-update', subscription)
+  },
+
+  // Update APIs
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  restartAppToUpdate: () => ipcRenderer.invoke('restart-app-to-update'),
+  onUpdateStatus: (callback: (info: any) => void) => {
+    const subscription = (_event: any, info: any) => callback(info)
+    ipcRenderer.on('update-status', subscription)
+    return () => ipcRenderer.removeListener('update-status', subscription)
   }
 }
 

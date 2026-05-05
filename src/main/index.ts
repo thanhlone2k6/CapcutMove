@@ -39,6 +39,10 @@ function createWindow(): void {
   }
 
   registerIpcHandlers(mainWindow)
+  
+  // Initialize auto updater
+  const { setupAutoUpdater } = require('./updateService')
+  setupAutoUpdater(mainWindow)
 }
 
 // This method will be called when Electron has finished

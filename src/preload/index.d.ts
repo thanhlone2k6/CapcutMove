@@ -38,6 +38,9 @@ export interface API {
   cancelExport: () => Promise<void>
   cancelImport: () => Promise<void>
   onProgress: (callback: (progressInfo: any) => void) => () => void
+  checkForUpdates: () => Promise<any>
+  restartAppToUpdate: () => Promise<void>
+  onUpdateStatus: (callback: (updateInfo: any) => void) => () => void
 }
 
 declare global {
