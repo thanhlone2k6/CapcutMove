@@ -54,27 +54,6 @@ function formatDataDisplay(processed: number, total: number): string {
 export default function ExportProject({ settings, onSettingsChange }: ExportProjectProps): React.JSX.Element {
   const [capcutFolder, setCapcutFolder] = useState(settings.lastCapCutProjectsFolder || '')
 
-  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{ isOpen: boolean; project: any }>({ isOpen: false, project: null })
-
-  const handleDeleteProject = async (e: React.MouseEvent, p: any) => {
-    e.stopPropagation()
-    setDeleteConfirmModal({ isOpen: true, project: p })
-  }
-
-  const confirmDeleteProject = async () => {
-    const p = deleteConfirmModal.project
-    if (!p) return
-    try {
-      await window.api.deleteProject(p.fullPath)
-      loadProjects(capcutFolder)
-      if (selectedProject?.name === p.name) setSelectedProject(null)
-    } catch (err: any) {
-      // Show error in a non-alert way — we'll use a temp state
-      console.error('Xóa thất bại:', err.message)
-    }
-    setDeleteConfirmModal({ isOpen: false, project: null })
-  }
-
   const [outputFolder, setOutputFolder] = useState(settings.lastOutputFolder || '')
   const [projects, setProjects] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -98,8 +77,37 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
     message: '',
     existingPath: '',
     projectName: '',
-    onResolve: (_finalPath: string) => {}
+    overwriteLabel: '',
+    renameLabel: '',
+    hideRename: false,
+    onResolve: (_action: string) => {}
   })
+
+  const handleDeleteProject = async (e: React.MouseEvent, p: any) => {
+    e.stopPropagation()
+    setConflictModal({
+      isOpen: true,
+      title: 'Xác nhận xóa dự án',
+      message: `Bạn có chắc muốn xóa vĩnh viễn dự án "${p.name}"?`,
+      existingPath: p.fullPath,
+      projectName: p.name,
+      overwriteLabel: 'Xác nhận xóa',
+      renameLabel: '',
+      hideRename: true,
+      onResolve: async (action: string) => {
+        setConflictModal(prev => ({ ...prev, isOpen: false }))
+        if (action === 'overwrite') {
+          try {
+            await window.api.deleteProject(p.fullPath)
+            loadProjects(capcutFolder)
+            if (selectedProject?.name === p.name) setSelectedProject(null)
+          } catch (err: any) {
+            console.error('Xóa thất bại:', err.message)
+          }
+        }
+      }
+    })
+  }
 
   useEffect(() => {
     let timer: any
@@ -271,11 +279,17 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
           message: 'CapCut đang chạy. Cần đóng CapCut để tránh lỗi file. Tiếp tục?',
           existingPath: 'CapCut.exe',
           projectName: '',
+          overwriteLabel: 'Đóng CapCut & Tiếp tục',
+          renameLabel: 'Tiếp tục (Không khuyến nghị)',
+          hideRename: false,
           onResolve: async (action: string) => {
             setConflictModal(prev => ({ ...prev, isOpen: false }))
             if (action === 'overwrite') {
               await window.api.killCapcut()
               await new Promise(r => setTimeout(r, 1000))
+              proceedExport()
+            } else if (action === 'rename') {
+              // User chooses to skip closing
               proceedExport()
             }
           }
@@ -300,6 +314,9 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
         message: `Trong thư mục đích đã có file ${zipFileName}. Bạn muốn làm gì?`,
         existingPath: `${outputFolder}\\${zipFileName}`,
         projectName: selectedProject.name,
+        overwriteLabel: 'Ghi đè file cũ',
+        renameLabel: 'Tự động đổi tên (thêm số)',
+        hideRename: false,
         onResolve: async (action: string) => {
           setConflictModal(prev => ({ ...prev, isOpen: false }))
           if (action === 'overwrite') {
@@ -607,23 +624,13 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
         title={conflictModal.title}
         message={conflictModal.message}
         existingName={conflictModal.existingPath}
+        overwriteLabel={conflictModal.overwriteLabel}
+        renameLabel={conflictModal.renameLabel}
+        hideRename={conflictModal.hideRename}
         onOverwrite={() => conflictModal.onResolve('overwrite')}
         onAutoRename={() => conflictModal.onResolve('rename')}
         onCancel={() => setConflictModal(prev => ({ ...prev, isOpen: false }))}
       />
-
-      {/* Delete Confirmation Modal */}
-      {deleteConfirmModal.isOpen && (
-        <ConflictModal
-          isOpen={true}
-          title="Xác nhận xóa dự án"
-          message={`Bạn có chắc muốn xóa vĩnh viễn dự án "${deleteConfirmModal.project?.name}"?`}
-          existingName={deleteConfirmModal.project?.fullPath || ''}
-          onOverwrite={confirmDeleteProject}
-          onAutoRename={() => setDeleteConfirmModal({ isOpen: false, project: null })}
-          onCancel={() => setDeleteConfirmModal({ isOpen: false, project: null })}
-        />
-      )}
     </div>
   )
 }

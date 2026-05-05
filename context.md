@@ -62,4 +62,4 @@ Giao diện người dùng (Frontend).
 3. Nhấn Import: App tắt CapCut -> Giải nén -> Di chuyển tài nguyên vào thư mục dự án -> (Tùy chọn) Sửa đường dẫn -> Mở lại CapCut.
 
 ---
-*Tài liệu này được cập nhật vào ngày 05/05/2026 bởi Antigravity.*
+*Tài liệu này được cập nhật lên bản v2.3 vào ngày 05/05/2026 bởi Antigravity.*

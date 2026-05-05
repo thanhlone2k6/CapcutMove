@@ -50,6 +50,9 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
     message: '',
     existingPath: '',
     projectName: '',
+    overwriteLabel: '',
+    renameLabel: '',
+    hideRename: false,
     onResolve: (_finalName: string) => {}
   })
 
@@ -107,10 +110,33 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
 
     const isRunning = await window.api.checkCapcutRunning()
     if (isRunning) {
-      await window.api.killCapcut()
-      await new Promise(r => setTimeout(r, 1000))
+      setConflictModal({
+        isOpen: true,
+        title: 'CapCut đang chạy',
+        message: 'CapCut đang chạy. Cần đóng CapCut để tránh lỗi file. Tiếp tục?',
+        existingPath: 'CapCut.exe',
+        projectName: '',
+        overwriteLabel: 'Đóng CapCut & Tiếp tục',
+        renameLabel: 'Tiếp tục (Không khuyến nghị)',
+        hideRename: false,
+        onResolve: async (action: string) => {
+          setConflictModal(prev => ({ ...prev, isOpen: false }))
+          if (action === 'overwrite') {
+            await window.api.killCapcut()
+            await new Promise(r => setTimeout(r, 1000))
+            proceedImport()
+          } else if (action === 'rename') {
+            proceedImport()
+          }
+        }
+      })
+      return
     }
 
+    await proceedImport()
+  }
+
+  const proceedImport = async () => {
     setIsImporting(true)
     setProgress(null)
     setImportResult(null)
@@ -126,6 +152,9 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
           message: `Máy này đã có project tên "${projectName}". Bạn muốn làm gì?`,
           existingPath: targetPath,
           projectName: projectName,
+          overwriteLabel: 'Ghi đè project cũ',
+          renameLabel: 'Tự động đổi tên (thêm số)',
+          hideRename: false,
           onResolve: async (action: string) => {
             setConflictModal(prev => ({ ...prev, isOpen: false }))
             if (action === 'overwrite') {
@@ -342,6 +371,9 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
         title={conflictModal.title}
         message={conflictModal.message}
         existingName={conflictModal.existingPath}
+        overwriteLabel={conflictModal.overwriteLabel}
+        renameLabel={conflictModal.renameLabel}
+        hideRename={conflictModal.hideRename}
         onOverwrite={() => conflictModal.onResolve('overwrite')}
         onAutoRename={() => conflictModal.onResolve('rename')}
         onCancel={() => {

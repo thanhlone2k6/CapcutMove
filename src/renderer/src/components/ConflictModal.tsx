@@ -9,6 +9,9 @@ interface ConflictModalProps {
   onOverwrite: () => void
   onAutoRename: () => void
   onCancel: () => void
+  overwriteLabel?: string
+  renameLabel?: string
+  hideRename?: boolean
 }
 
 const ConflictModal: React.FC<ConflictModalProps> = ({
@@ -18,7 +21,10 @@ const ConflictModal: React.FC<ConflictModalProps> = ({
   existingName,
   onOverwrite,
   onAutoRename,
-  onCancel
+  onCancel,
+  overwriteLabel,
+  renameLabel,
+  hideRename
 }) => {
   if (!isOpen) return null
 
@@ -63,12 +69,14 @@ const ConflictModal: React.FC<ConflictModalProps> = ({
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <button className="btn btn-primary" style={{ justifyContent: 'center', padding: '12px' }} onClick={onAutoRename}>
-              <Copy size={16} style={{ marginRight: 8 }} /> Thêm (1) vào cuối tên
-            </button>
+            {!hideRename && (
+              <button className="btn btn-primary" style={{ justifyContent: 'center', padding: '12px' }} onClick={onAutoRename}>
+                <Copy size={16} style={{ marginRight: 8 }} /> {renameLabel || 'Thêm (1) vào cuối tên'}
+              </button>
+            )}
             
             <button className="btn" style={{ justifyContent: 'center', padding: '12px', border: '1px solid var(--danger)', color: 'var(--danger)' }} onClick={onOverwrite}>
-              <Trash2 size={16} style={{ marginRight: 8 }} /> Ghi đè file/thư mục cũ
+              <Trash2 size={16} style={{ marginRight: 8 }} /> {overwriteLabel || 'Ghi đè file/thư mục cũ'}
             </button>
             
             <button className="btn" style={{ justifyContent: 'center', padding: '12px' }} onClick={onCancel}>
