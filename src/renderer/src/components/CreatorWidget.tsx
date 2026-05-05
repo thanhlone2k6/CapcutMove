@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Coffee, Copy, Check, ChevronRight, ChevronLeft } from 'lucide-react'
+import { Coffee, Copy, Check, ChevronLeft } from 'lucide-react'
 import facebookIcon from '../assets/facebook.webp'
 import donateImage from '../assets/donate.jpg'
 import instagramIcon from '../assets/instagram.webp'
