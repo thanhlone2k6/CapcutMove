@@ -66,61 +66,73 @@ export async function importPackage(params: ImportParams, sendProgress: (info: a
   isCancelled = false
 
   const emit = (p: Partial<ImportProgress>) => sendProgress(makeProgress(p))
-
-  // Get zip total size for progress
-  const zipStat = await fs.stat(zipPath)
-  const totalBytes = zipStat.size
   const startTime = Date.now()
   let processedBytes = 0
 
   if (isCancelled) throw new Error('Cancelled')
 
-  emit({ stage: 'extracting_zip', message: 'Extracting package...', processedBytes: 0, totalBytes, percent: 0, speedBytesPerSec: 0, etaSeconds: null, processedFiles: 0, totalFiles: 0 })
+  emit({
+    stage: 'extracting_zip', message: 'Reading ZIP structure...',
+    processedBytes: 0, totalBytes: 0, percent: 0,
+    speedBytesPerSec: 0, etaSeconds: null,
+    processedFiles: 0, totalFiles: 0
+  })
+
+  // Use Open.file (central directory) instead of streaming Extract.
+  // This properly handles ZIP64 format and large files exported from other machines.
+  const directory = await unzipper.Open.file(zipPath)
+  const files = directory.files.filter((f: any) => f.type === 'File')
+  const totalFiles = files.length
+  const totalBytes = files.reduce((sum: number, f: any) => sum + safeNum(f.uncompressedSize), 0)
 
   const tempDir = path.join(app.getPath('temp'), '_capcut_import_' + Date.now())
   await fs.ensureDir(tempDir)
 
   try {
-    // Extract with progress tracking via stream bytes
-    await new Promise<void>((resolve, reject) => {
-      const readStream = fs.createReadStream(zipPath)
-      const extractor = unzipper.Extract({ path: tempDir })
-      
-      let rejected = false
-      const checkCancel = setInterval(() => {
-        if (isCancelled && !rejected) {
-          rejected = true
-          clearInterval(checkCancel)
-          readStream.unpipe(extractor)
-          readStream.destroy()
-          extractor.destroy()
-          reject(new Error('Import cancelled by user.'))
-        }
-      }, 500)
+    let filesDone = 0
 
-      readStream.on('data', (chunk) => {
-        if (isCancelled) return
-        processedBytes += chunk.length
-        const elapsed = (Date.now() - startTime) / 1000
-        const speed = elapsed > 0 ? processedBytes / elapsed : 0
-        const eta = speed > 0 && totalBytes > 0 ? Math.max(0, (totalBytes - processedBytes) / speed) : null
-        const pct = totalBytes > 0 ? Math.min(99, Math.floor((processedBytes / totalBytes) * 100)) : 0
+    for (const entry of files) {
+      if (isCancelled) throw new Error('Import cancelled by user.')
 
-        emit({ stage: 'extracting_zip', message: 'Extracting package...', processedBytes, totalBytes, percent: pct, speedBytesPerSec: speed, etaSeconds: eta, processedFiles: 0, totalFiles: 0 })
+      const outputPath = path.join(tempDir, entry.path)
+      await fs.ensureDir(path.dirname(outputPath))
+
+      // Stream each file individually to avoid memory issues with large videos
+      await new Promise<void>((resolve, reject) => {
+        const src = (entry as any).stream()
+        const dest = fs.createWriteStream(outputPath)
+        src.on('error', (err: Error) => reject(err))
+        dest.on('error', (err: Error) => reject(err))
+        dest.on('finish', () => resolve())
+        src.pipe(dest)
       })
 
-      readStream.pipe(extractor)
-        .on('close', () => {
-          clearInterval(checkCancel)
-          if (!rejected) resolve()
-        })
-        .on('error', (err) => {
-          clearInterval(checkCancel)
-          if (!rejected) reject(err)
-        })
-    })
+      filesDone++
+      processedBytes += safeNum((entry as any).uncompressedSize)
 
-    emit({ stage: 'importing_project', message: 'Copying project to CapCut folder...', processedBytes: totalBytes, totalBytes, percent: 100, speedBytesPerSec: 0, etaSeconds: 0, processedFiles: 0, totalFiles: 0 })
+      const elapsed = (Date.now() - startTime) / 1000
+      const speed = elapsed > 0 ? processedBytes / elapsed : 0
+      const eta = speed > 0 && totalBytes > 0 ? Math.max(0, (totalBytes - processedBytes) / speed) : null
+      const pct = totalBytes > 0 ? Math.min(99, Math.floor((processedBytes / totalBytes) * 100)) : 0
+
+      emit({
+        stage: 'extracting_zip',
+        message: `Extracting... (${filesDone}/${totalFiles} files)`,
+        processedBytes, totalBytes,
+        percent: pct,
+        speedBytesPerSec: speed,
+        etaSeconds: eta,
+        processedFiles: filesDone,
+        totalFiles
+      })
+    }
+
+    emit({
+      stage: 'importing_project', message: 'Copying project to CapCut folder...',
+      processedBytes: totalBytes, totalBytes, percent: 100,
+      speedBytesPerSec: 0, etaSeconds: 0,
+      processedFiles: totalFiles, totalFiles
+    })
 
     // Read manifest
     const manifestPath = path.join(tempDir, 'manifest.json')
@@ -135,7 +147,12 @@ export async function importPackage(params: ImportParams, sendProgress: (info: a
 
     await fs.copy(extractedProjectDir, targetProjectDir)
 
-    emit({ stage: 'copying_assets', message: 'Moving assets to output folder...', processedBytes: totalBytes, totalBytes, percent: 100, speedBytesPerSec: 0, etaSeconds: 0, processedFiles: 0, totalFiles: 0 })
+    emit({
+      stage: 'copying_assets', message: 'Moving assets to output folder...',
+      processedBytes: totalBytes, totalBytes, percent: 100,
+      speedBytesPerSec: 0, etaSeconds: 0,
+      processedFiles: totalFiles, totalFiles
+    })
 
     const extractedAssetsDir = path.join(tempDir, 'assets_collected')
     const finalAssetsDir = path.join(targetCapCutFolder, finalProjectName, 'assets_collected')
@@ -144,7 +161,12 @@ export async function importPackage(params: ImportParams, sendProgress: (info: a
     }
 
     if (doPatch) {
-      emit({ stage: 'patching_paths', message: 'Patching media paths...', processedBytes: totalBytes, totalBytes, percent: 100, speedBytesPerSec: 0, etaSeconds: 0, processedFiles: 0, totalFiles: 0 })
+      emit({
+        stage: 'patching_paths', message: 'Patching media paths...',
+        processedBytes: totalBytes, totalBytes, percent: 100,
+        speedBytesPerSec: 0, etaSeconds: 0,
+        processedFiles: totalFiles, totalFiles
+      })
 
       const pathMapPath = path.join(tempDir, 'path_map.json')
       if (await fs.pathExists(pathMapPath)) {
@@ -153,7 +175,12 @@ export async function importPackage(params: ImportParams, sendProgress: (info: a
       }
     }
 
-    emit({ stage: 'done', message: 'Import successful.', processedBytes: totalBytes, totalBytes, percent: 100, speedBytesPerSec: 0, etaSeconds: 0, processedFiles: 0, totalFiles: 0 })
+    emit({
+      stage: 'done', message: 'Import successful.',
+      processedBytes: totalBytes, totalBytes, percent: 100,
+      speedBytesPerSec: 0, etaSeconds: 0,
+      processedFiles: totalFiles, totalFiles
+    })
 
     return {
       newProjectPath: targetProjectDir,
