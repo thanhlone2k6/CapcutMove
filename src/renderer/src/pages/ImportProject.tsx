@@ -362,6 +362,51 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
                 <strong>Hướng dẫn Relink:</strong> Mở CapCut &gt; Mở project &gt; Media sẽ báo đỏ (Missing) &gt; Chọn các file bị thiếu &gt; Chuột phải &gt; Link to Media &gt; Trỏ về đường dẫn Assets Path bên trên.
               </div>
             )}
+
+            {importResult.patchReport && (
+              <div className="alert alert-info" style={{ margin: 0, marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <h4 style={{ margin: 0, fontSize: 14 }}>Báo cáo Patch Paths</h4>
+                <ul style={{ margin: 0, paddingLeft: 16, fontSize: 13, lineHeight: 1.6 }}>
+                  <li>Tổng file media: {importResult.patchReport.totalMappings}</li>
+                  <li>Đã thay thế chính xác (Exact Match): {importResult.patchReport.exactPathReplacements}</li>
+                  <li>Đã thay thế tự động (Basename Match): {importResult.patchReport.basenameFallbackReplacements}</li>
+                </ul>
+                
+                {importResult.patchReport.missingNewPaths?.length > 0 && (
+                  <div style={{ color: 'var(--danger)', fontSize: 13, background: 'rgba(239, 68, 68, 0.1)', padding: 8, borderRadius: 4 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
+                      <AlertTriangle size={14} /> {importResult.patchReport.missingNewPaths.length} file không tồn tại trên máy này (bỏ qua patch):
+                    </div>
+                    <ul style={{ margin: '4px 0 0', paddingLeft: 16, maxHeight: 100, overflowY: 'auto' }}>
+                      {importResult.patchReport.missingNewPaths.map((p: string, i: number) => <li key={i}>{p.split(/[\\/]/).pop()}</li>)}
+                    </ul>
+                  </div>
+                )}
+                
+                {importResult.patchReport.unresolvedOldPaths?.length > 0 && (
+                  <div style={{ color: 'var(--danger)', fontSize: 13, background: 'rgba(239, 68, 68, 0.1)', padding: 8, borderRadius: 4 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
+                      <AlertTriangle size={14} /> {importResult.patchReport.unresolvedOldPaths.length} đường dẫn cũ chưa thể xử lý:
+                    </div>
+                    <ul style={{ margin: '4px 0 0', paddingLeft: 16, maxHeight: 100, overflowY: 'auto', wordBreak: 'break-all' }}>
+                      {importResult.patchReport.unresolvedOldPaths.map((p: string, i: number) => <li key={i}>{p}</li>)}
+                    </ul>
+                  </div>
+                )}
+
+                {importResult.patchReport.unresolvedOldPaths?.length === 0 && importResult.patchReport.missingNewPaths?.length === 0 && (
+                  <div style={{ color: 'var(--success)', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600, fontSize: 13 }}>
+                    <CheckCircle size={14} /> Patch hoàn tất. Không cần relink thủ công.
+                  </div>
+                )}
+                
+                {(importResult.patchReport.unresolvedOldPaths?.length > 0 || importResult.patchReport.missingNewPaths?.length > 0) && (
+                  <div style={{ color: 'var(--warning)', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600, fontSize: 13 }}>
+                    <AlertTriangle size={14} /> Patch một phần. Cần relink thủ công các file còn thiếu.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

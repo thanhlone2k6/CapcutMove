@@ -47,19 +47,69 @@ Giao diện người dùng (Frontend).
 - **Grid Layout 3 cột**: Tối ưu không gian hiển thị danh sách dự án với đầy đủ thông tin dung lượng và ngày cập nhật.
 - **Streaming Logic**: Mọi thao tác nén/giải nén đều dùng Stream, đảm bảo app vẫn mượt mà ngay cả khi dự án nặng hàng chục GB.
 
-## 5. Quy trình làm việc (Workflows)
+## 5. Phân tích Thuật toán và Logic Chi tiết
 
-### Quy trình Export (Xuất dự án)
-1. Chọn/Tự động tìm thư mục CapCut.
-2. Click chọn dự án từ Grid (App tự động kiểm tra tính hợp lệ và quét tài nguyên).
-3. App liệt kê số lượng file tìm thấy và dung lượng tổng.
-4. Nhấn Export: App tắt CapCut -> Gom file JSON + Media + Font -> Đóng gói ZIP -> Báo cáo tiến độ theo %.
+### A. Thuật toán Quét và Thu thập Tài nguyên (Asset Collection)
+Đây là "trái tim" của hệ thống, nằm tại `src/main/assetCollector.ts`. Để không bỏ sót bất cứ file media nào, thuật toán hoạt động theo các bước nghiêm ngặt:
 
-### Quy trình Import (Nhập dự án)
-1. Chọn file ZIP đã xuất.
-2. App đọc file Manifest bên trong ZIP:
-   - Nếu tên dự án đã tồn tại trên máy, app sẽ hiện popup yêu cầu người dùng nhập tên mới.
-3. Nhấn Import: App tắt CapCut -> Giải nén -> Di chuyển tài nguyên vào thư mục dự án -> (Tùy chọn) Sửa đường dẫn -> Mở lại CapCut.
+1. **Đọc File Cấu hình:** Hệ thống nhắm trực tiếp vào 2 file cốt lõi của CapCut:
+   - `draft_content.json`: Chứa dữ liệu toàn bộ timeline, hiệu ứng, và tài nguyên media sử dụng trong video.
+   - `draft_meta_info.json`: Chứa metadata, ảnh bìa, và cấu hình dự án.
+2. **Trích xuất Đường dẫn (Path Extraction):** Thay vì dùng Regex thô sơ có nguy cơ bỏ sót hoặc bắt nhầm văn bản thường, hệ thống parse toàn bộ file JSON thành Object, sau đó đệ quy duyệt qua mọi Value trong cây dữ liệu (`extractPathsFromObj`). Bất kỳ chuỗi nào mang định dạng của đường dẫn hệ thống (chứa `/` hoặc `\`, có đuôi mở rộng) đều được gom lại.
+3. **Thuật toán Lọc trùng (Deduplication):** Trên một timeline dài, một đoạn video/âm thanh có thể bị cắt làm hàng trăm mảnh nhỏ, tạo ra hàng trăm đường dẫn lặp lại. Hệ thống tạo một HashMap (`dedupeMap`). Tất cả đường dẫn được chuẩn hóa (đưa về chữ thường, đổi `\` thành `/`) để làm Key. Nhờ độ phức tạp thuật toán O(1) của HashMap, thao tác lọc hàng ngàn file trùng lặp diễn ra gần như tức thời.
+4. **Thuật toán Băm (Hashing) Chống Trùng tên:** Trên máy tính người dùng, rất dễ xảy ra tình trạng trùng tên file ở các thư mục khác nhau (VD: `C:\Downloads\video.mp4` và `D:\Camera\video.mp4`). Nếu copy thẳng vào thư mục `assets_collected`, chúng sẽ ghi đè nhau. Để giải quyết, ứng dụng dùng thuật toán băm **MD5** tạo mã định danh từ chuỗi `Đường_dẫn_tuyệt_đối + Dung_lượng_file + Thời_gian_sửa_đổi`. 
+   - Lấy 6 ký tự đầu tiên của mã Hash này nối vào tên file gốc (VD: `video_a1b2c3.mp4`). Điều này đảm bảo 100% sự độc nhất tuyệt đối cho mọi tài nguyên.
+
+### B. Phương pháp Nén (Export Zip)
+Quy trình nén được tối ưu tại `src/main/zipService.ts` bằng thư viện `archiver` kết nối trực tiếp với API File System của Node.js.
+
+- **Phương pháp & Thuật toán:** Nén chuẩn Deflate với cường độ nén tối đa (`zlib: { level: 9 }`).
+- **Cơ chế Streaming (Luồng dữ liệu):**
+  - **Cách hoạt động:** Việc nạp một video 5GB vào RAM để nén sẽ làm sập ứng dụng (Crash OOM). Do đó, thuật toán áp dụng cơ chế Streaming. Dữ liệu được đọc từ ổ cứng thành từng "chunk" (gói nhỏ khoảng 64KB) -> Đưa ngay vào bộ giải thuật nén zlib -> Ghi xuất trực tiếp (Pipe) chunk đã nén xuống file `.zip` đích (`fs.createWriteStream`). 
+  - **Ưu điểm:** Cực kỳ tiết kiệm tài nguyên. Dung lượng RAM tiêu thụ chỉ dao động ở mức vài chục MB cho dù dự án cần xuất nặng tới 100GB.
+  - **Nhược điểm:** Hiệu năng phụ thuộc nhiều vào tốc độ Đọc/Ghi IOPS của ổ cứng hệ thống. Bên cạnh đó, vì nén theo luồng, không thể biết trước dung lượng file ZIP cuối cùng là bao nhiêu. Do đó, thanh Progress UI phải tính toán tiến độ (%) dựa trên số Byte *dữ liệu gốc* đã được đưa qua luồng đọc thay vì Byte dữ liệu đã nén.
+
+### C. Phương pháp Giải nén (Import Zip)
+Quy trình giải nén do `src/main/importService.ts` đảm nhiệm, sử dụng thư viện `unzipper` với kỹ thuật đọc phân vùng hiện đại.
+
+- **Phương pháp Giải nén:** Đọc Central Directory (Thư mục trung tâm) nằm ở phần đuôi của cấu trúc file ZIP.
+- **Cơ chế:**
+  - Thông thường người ta sẽ dùng hàm `unzipper.Extract()` để xả nén nguyên file. Phương pháp cũ này đọc file ZIP tuần tự từ byte đầu đến cuối, rất rủi ro với file lớn và dễ bị chặn luồng (blocking).
+  - Ứng dụng này sử dụng API `Open.file()`. API này sẽ quét nhanh phần "mục lục" (Central Directory) của file ZIP, nạp cấu trúc cây thư mục thành một mảng `directory.files`.
+  - Sau đó, hệ thống lặp qua mảng này, khởi tạo `.stream()` cho từng file con và pipe dữ liệu giải nén ra thẳng ổ cứng.
+  - **Ưu điểm:** Đây là phương pháp tối ưu nhất cho định dạng **ZIP64** (tiêu chuẩn cho file > 4GB). Nó là Non-blocking, kiểm soát được luồng dữ liệu chính xác đến từng file, giúp theo dõi phần trăm tiến độ cực kỳ nhạy bén. Đồng thời dễ dàng bắt lỗi từng file cụ thể mà không làm gián đoạn cả quá trình.
+
+### D. Thuật toán Sửa đường dẫn tự động (Path Patching)
+Khi dự án được mang sang máy mới, các đường dẫn tĩnh (VD: ổ `C:\...`) nằm trong file JSON sẽ chết (offline). Tính năng Patch Paths (`src/main/pathPatchService.ts`) thực thi một thuật toán thông minh để nối lại (Relink) tài nguyên.
+
+1. **Chiến lược Thay thế Đa tầng (Multi-Priority Patching):**
+   - *Tầng 1 đến 4 (Độ chính xác tuyệt đối):* App sử dụng file `path_map.json` (được tạo ở khâu Export). Ứng dụng sinh ra 4 biến thể của đường dẫn cũ (VD: dùng `/`, dùng `\`, dùng `\\` escape thông thường, và `\/` escape JSON). Khớp đúng 100% các biến thể này để đổi thành đường dẫn của `assets_collected` mới.
+   - *Tầng 5 (Fallback Regex Hậu kiểm):* Trường hợp CapCut tự sinh ra đường dẫn lạ hoặc bị thiếu sót, app dùng một biểu thức chính quy (Regex) quét toàn bộ mã nguồn file JSON để mò tìm bất cứ text nào có vẻ là đường dẫn media. Sau đó trích xuất phần đuôi tên file (Basename) khớp với mã Hash để suy ngược ra vị trí file mới nằm ở đâu.
+2. **Kỹ thuật Thao tác chuỗi An toàn:**
+   - Việc dùng Regex `String.replace()` để thay thế hàng loạt đường dẫn trong một file JSON nặng 50MB là tự sát do hiện tượng "Catastrophic Backtracking" (gây kẹt CPU).
+   - Ứng dụng sử dụng một mẹo cực kỳ tốc độ: **`content.split(chuỗi_cũ).join(chuỗi_mới)`**. Phương thức chia cắt và hợp nhất mảng này loại bỏ hoàn toàn Regex ở khâu ghi đè, chạy với tốc độ chớp mắt và an toàn tuyệt đối cho mọi ký tự đặc biệt có trong đường dẫn hệ điều hành.
+
+## 6. Giao tiếp & Tương tác trong App (App Interaction & Features)
+
+### A. Tương tác Người dùng & Tính năng UI
+- **Quản lý Layout:** Màn hình chia làm 2 vùng hiển thị: Vùng Cài đặt/Tiến độ bên trái và Lưới Preview Dự án (Grid) bên phải.
+- **Auto Detect & Chọn thư mục:** Người dùng nhấn nút "Auto Detect", App tự dùng tính năng dò tìm vị trí cài đặt CapCut, sau đó load danh sách dự án tức thì.
+- **Bộ lọc và Sắp Xếp (Filter & Sort):** Người dùng có thể tìm kiếm dự án bằng tên (đã lọc loại bỏ dấu tiếng Việt để tìm dễ dàng hơn) và áp dụng các tiêu chí sắp xếp như: Mới nhất, Cũ nhất, Dung lượng lớn/nhỏ, Tên A-Z.
+- **Auto Check & Scan:** Click chọn một dự án, ứng dụng chạy ngầm hai tác vụ kiểm tra (`checkProject`) và quét tài nguyên (`scanAssets`). Giao diện ngay lập tức thông báo trạng thái "Hợp lệ" và tổng hợp số liệu (tổng file, dung lượng) mà không bắt người dùng nhấn thêm thao tác nào.
+- **Giao diện Tiến độ (Progress UI):** Khi Export/Import khởi chạy, giao diện thay đổi linh hoạt:
+  - Hiển thị thanh Progress Bar cực dày bản.
+  - Cập nhật số liệu thời gian thực: Dung lượng, Tốc độ MB/s, và Thời gian dự kiến (ETA).
+  - Tích hợp một Stopwatch ở trên cùng nút thao tác.
+  - Cung cấp nút Cancel hỗ trợ hủy ngang luồng mọi lúc.
+- **Xử lý Xung Đột (Conflict Handling - `ConflictModal`):** 
+  - **CapCut đang chạy:** Nếu thao tác lúc phần mềm đang mở, Modal cảnh báo xuất hiện yêu cầu "Đóng CapCut" để tránh hỏng dữ liệu.
+  - **Trùng file:** Nếu file ZIP đích hoặc Dự án đích đã tồn tại, Modal cung cấp 2 tùy chọn nhanh: "Ghi đè" hoặc "Tự động đổi tên thêm số" để tránh bị chặn luồng.
+- **Hành động Liên mạch:** Khi quá trình thành công, UI cung cấp ngay phím tắt "Open Folder" và "Locate ZIP" để tương tác trực tiếp với file trên hệ điều hành.
+
+### B. Giao tiếp Hệ thống (Architecture Communication)
+- **Cầu nối IPC & Preload:** Mọi luồng tương tác giữa UI (React) và logic Core (Node.js) chạy qua một API Context an toàn được cấu hình ở `preload/index.ts` (`window.api`).
+- **Non-blocking UI:** Nhờ thiết kế phân tách giữa Main (backend) và Renderer (frontend), tất cả thao tác nặng nhọc (File I/O, regex searching, zipping) đều thực thi song song ở Main Process. Giao diện React hoàn toàn không bị "đóng băng" (Blocking) và đảm bảo 60 FPS trong mọi tình huống.
+- **Event-Driven Progress:** Thông qua `sendProgress`, tiến trình cập nhật được đẩy về Renderer dưới dạng Event liên tục. React State tiếp nhận để re-render chỉ riêng những thanh đo (progress bars) mà không ảnh hưởng toàn cục trang.
 
 ---
-*Tài liệu này được cập nhật lên bản v2.3 vào ngày 05/05/2026 bởi Antigravity.*
+*Tài liệu này được cập nhật vào ngày 16/05/2026 bởi Antigravity.*

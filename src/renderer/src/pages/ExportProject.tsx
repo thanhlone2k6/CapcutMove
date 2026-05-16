@@ -351,6 +351,11 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
   const speedVal = safeNumber(progress?.speedBytesPerSec, 0)
   const etaVal = progress?.etaSeconds
 
+  const missingAssets = useMemo(() => {
+    if (!scanResult?.assets) return []
+    return scanResult.assets.filter((a: any) => a.status === 'missing')
+  }, [scanResult])
+
   return (
     <div style={{ display: 'flex', gap: 16, height: 'calc(100vh - 94px)' }}>
       {/* LEFT COLUMN: Settings & Export */}
@@ -412,6 +417,24 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
                     <span className="value">{(scanResult.totalSize / 1024 / 1024).toFixed(1)} MB</span>
                   </div>
                 </div>
+                {missingAssets.length > 0 && (
+                  <div className="alert alert-warning" style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6, padding: '12px 14px', background: 'rgba(234, 179, 8, 0.1)', color: 'var(--warning)', border: '1px solid rgba(234, 179, 8, 0.3)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600 }}>
+                      <AlertTriangle size={18} />
+                      <span>{missingAssets.length} file không tìm thấy trên máy này và sẽ bị thiếu khi import sang máy khác:</span>
+                    </div>
+                    <ul style={{ margin: 0, paddingLeft: 24, fontSize: 13, opacity: 0.9, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {missingAssets.slice(0, 3).map((a: any, i: number) => (
+                        <li key={i} title={a.originalPath} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {a.originalBasename || a.originalPath}
+                        </li>
+                      ))}
+                      {missingAssets.length > 3 && (
+                        <li style={{ fontStyle: 'italic', opacity: 0.8 }}>... và {missingAssets.length - 3} file khác</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -434,6 +457,11 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
             style={{ width: '100%', padding: 16, fontSize: 16, display: 'flex', flexDirection: 'column', gap: 4, height: isExporting ? 80 : 'auto' }}
           >
             <span>{isExporting ? 'Exporting...' : 'Export ZIP Package'}</span>
+            {!isExporting && missingAssets.length > 0 && (
+              <span style={{ fontSize: 13, fontWeight: 400, opacity: 0.9, color: '#fde047' }}>
+                (Package sẽ thiếu {missingAssets.length} file media)
+              </span>
+            )}
             {isExporting && (
               <span style={{ fontSize: 24, fontFamily: 'monospace', fontWeight: 700, opacity: 0.9 }}>
                 {formatTime(exportTime)}

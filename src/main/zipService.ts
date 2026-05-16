@@ -63,7 +63,7 @@ async function calculateTotalSize(params: ExportParams): Promise<number> {
   } catch (_) {}
   const seen = new Set<string>()
   for (const a of params.scanResult.assets) {
-    let sp = a.absolutePath
+    let sp = a.resolvedDiskPaths[0]
     if (!a.exists && mr[a.id]) sp = mr[a.id]
     const ap = path.resolve(sp)
     if (seen.has(ap)) continue
@@ -185,17 +185,39 @@ export async function exportZip(
     const foundFiles: any[] = []
 
     for (const asset of scanResult.assets) {
-      let src = asset.absolutePath
+      let src = asset.resolvedDiskPaths[0]
       let isManual = false
       if (!asset.exists && mr[asset.id]) { src = mr[asset.id]; isManual = true }
       const exists = fs.existsSync(src)
       if (exists && asset.collectedRelativePath) {
         archive.file(src, { name: asset.collectedRelativePath })
-        pathMap.push({ originalPath: asset.originalPath, collectedRelativePath: asset.collectedRelativePath, type: asset.type, exists: true, status: isManual ? 'manual_resolved' : 'found' })
-        foundFiles.push(asset.absolutePath)
+        pathMap.push({
+          rawJsonPaths: asset.rawJsonPaths,
+          resolvedDiskPaths: asset.resolvedDiskPaths,
+          originalPath: asset.originalPath,
+          collectedRelativePath: asset.collectedRelativePath,
+          type: asset.type,
+          fileName: asset.fileName,
+          originalBasename: asset.originalBasename,
+          normalizedBasename: asset.normalizedBasename,
+          sourceFiles: asset.sourceFiles,
+          status: isManual ? 'manual_resolved' : 'found'
+        })
+        foundFiles.push(src)
       } else {
-        missingFiles.push(asset.absolutePath)
-        pathMap.push({ originalPath: asset.originalPath, exists: false, status: 'missing' })
+        missingFiles.push(src)
+        pathMap.push({
+          rawJsonPaths: asset.rawJsonPaths,
+          resolvedDiskPaths: asset.resolvedDiskPaths,
+          originalPath: asset.originalPath,
+          collectedRelativePath: '',
+          type: asset.type,
+          fileName: asset.fileName,
+          originalBasename: asset.originalBasename,
+          normalizedBasename: asset.normalizedBasename,
+          sourceFiles: asset.sourceFiles,
+          status: 'missing'
+        })
       }
     }
 

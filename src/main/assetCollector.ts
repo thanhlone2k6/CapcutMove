@@ -1,16 +1,27 @@
 import fs from 'fs-extra'
 import path from 'path'
+import crypto from 'crypto'
 import { extractPathsFromObj } from './pathExtractor'
 import { classifyFile, AssetType } from './fileClassifier'
 import { processFont, FontReportItem } from './fontCollector'
 
+const SKIP_PATH_PATTERNS = [
+  /[/\\]AppData[/\\]Local[/\\]CapCut[/\\]/i,
+  /[/\\]AppData[/\\]Roaming[/\\]CapCut[/\\]/i
+]
+
 export interface AssetMapItem {
   id: string
+  rawJsonPaths: string[]
+  resolvedDiskPaths: string[]
   originalPath: string
-  absolutePath: string
   collectedRelativePath: string
   type: AssetType
+  fileName: string
+  originalBasename: string
+  normalizedBasename: string
   sourceFiles: string[]
+  status: "found" | "missing" | "manual_resolved"
   exists: boolean
   sizeBytes: number
 }
@@ -67,11 +78,22 @@ export async function scanAssets(projectPath: string): Promise<ScanResult> {
   let fileIdCounter = 0
 
   for (const { path: rawPath, source } of allPaths) {
-    // If it's just a font name, process it for font report
+    if (rawPath.startsWith('http://') || rawPath.startsWith('https://') || rawPath.startsWith('s://')) {
+      continue
+    }
+
+    let shouldSkip = false
+    for (const pattern of SKIP_PATH_PATTERNS) {
+      if (pattern.test(rawPath)) {
+        shouldSkip = true
+        break
+      }
+    }
+    if (shouldSkip) continue
+
     const type = classifyFile(rawPath)
     if (type === 'font' || (!rawPath.includes('/') && !rawPath.includes('\\') && classifyFile(rawPath) === 'other')) {
        // might be a font name
-       // Actually, we can check if it looks like a file path
     }
 
     if (!rawPath.includes('/') && !rawPath.includes('\\') && !rawPath.includes('.')) {
@@ -92,6 +114,9 @@ export async function scanAssets(projectPath: string): Promise<ScanResult> {
       if (!existing.sourceFiles.includes(source)) {
         existing.sourceFiles.push(source)
       }
+      if (!existing.rawJsonPaths.includes(rawPath)) {
+        existing.rawJsonPaths.push(rawPath)
+      }
       continue
     }
 
@@ -106,6 +131,7 @@ export async function scanAssets(projectPath: string): Promise<ScanResult> {
 
     let exists = false
     let sizeBytes = 0
+    let mtimeMs = 0
 
     try {
       if (await fs.pathExists(absolutePath)) {
@@ -113,6 +139,7 @@ export async function scanAssets(projectPath: string): Promise<ScanResult> {
         if (stats.isFile()) {
           exists = true
           sizeBytes = stats.size
+          mtimeMs = stats.mtimeMs
         }
       }
     } catch (e) {
@@ -126,22 +153,38 @@ export async function scanAssets(projectPath: string): Promise<ScanResult> {
       totalMissing++
     }
 
+    const ext = path.extname(rawPath)
+    let baseName = path.basename(rawPath, ext)
+    
+    let originalBasenameNoExt = baseName;
+    const hashMatch = baseName.match(/(.*)_([a-z0-9]{6})$/);
+    if (hashMatch) {
+      originalBasenameNoExt = hashMatch[1];
+    }
+    
+    const originalBasename = originalBasenameNoExt + ext;
+
     let collectedRelativePath = ''
+    let fileName = ''
     if (exists || type === 'font') {
-      const ext = path.extname(rawPath)
-      let baseName = path.basename(rawPath, ext)
-      // basic collision avoidance in relative paths
-      const shortHash = Math.random().toString(36).substring(2, 8)
-      collectedRelativePath = `assets_collected/${type}s/${baseName}_${shortHash}${ext}`
+      const hashStr = exists ? `${absolutePath}_${sizeBytes}_${mtimeMs}` : absolutePath;
+      const shortHash = crypto.createHash('md5').update(hashStr).digest('hex').substring(0, 6);
+      fileName = `${originalBasenameNoExt}_${shortHash}${ext}`
+      collectedRelativePath = `assets_collected/${type}s/${fileName}`
     }
 
     const item: AssetMapItem = {
       id: `asset_${fileIdCounter++}`,
+      rawJsonPaths: [rawPath],
+      resolvedDiskPaths: [absolutePath],
       originalPath: rawPath,
-      absolutePath,
       collectedRelativePath,
       type,
+      fileName,
+      originalBasename,
+      normalizedBasename: originalBasename.toLowerCase(),
       sourceFiles: [source],
+      status: exists ? "found" : "missing",
       exists,
       sizeBytes
     }
@@ -164,3 +207,4 @@ export async function scanAssets(projectPath: string): Promise<ScanResult> {
     totalSize
   }
 }
+

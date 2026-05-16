@@ -160,6 +160,7 @@ export async function importPackage(params: ImportParams, sendProgress: (info: a
       await fs.move(extractedAssetsDir, finalAssetsDir, { overwrite: true })
     }
 
+    let patchReport = null
     if (doPatch) {
       emit({
         stage: 'patching_paths', message: 'Patching media paths...',
@@ -171,7 +172,7 @@ export async function importPackage(params: ImportParams, sendProgress: (info: a
       const pathMapPath = path.join(tempDir, 'path_map.json')
       if (await fs.pathExists(pathMapPath)) {
         const pathMap = await fs.readJson(pathMapPath)
-        await patchPaths({ projectPath: targetProjectDir, assetsFolder: finalAssetsDir, pathMap }, sendProgress)
+        patchReport = await patchPaths({ projectPath: targetProjectDir, assetsFolder: finalAssetsDir, pathMap }, sendProgress)
       }
     }
 
@@ -184,7 +185,8 @@ export async function importPackage(params: ImportParams, sendProgress: (info: a
 
     return {
       newProjectPath: targetProjectDir,
-      newAssetsPath: finalAssetsDir
+      newAssetsPath: finalAssetsDir,
+      patchReport
     }
   } finally {
     try {
