@@ -44,7 +44,8 @@ const api = {
     const subscription = (_event: any, info: any) => callback(info)
     ipcRenderer.on('update-status', subscription)
     return () => ipcRenderer.removeListener('update-status', subscription)
-  }
+  },
+  getAppVersion: () => ipcRenderer.invoke('get-app-version')
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

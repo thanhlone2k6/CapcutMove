@@ -8,8 +8,11 @@ export default function UpdateWidget() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [showResultToast, setShowResultToast] = useState(false)
   const [resultType, setResultType] = useState<'success' | 'info' | 'error'>('info')
+  const [currentVersion, setCurrentVersion] = useState<string>('')
 
   useEffect(() => {
+    window.api.getAppVersion().then(setCurrentVersion)
+
     const unsub = window.api.onUpdateStatus((info: any) => {
       setStatus(info.status)
       if (info.status === 'downloading') {
@@ -67,7 +70,7 @@ export default function UpdateWidget() {
             <RefreshCw size={20} className={status === 'checking' ? 'spin' : ''} />
           </button>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>App Version v5.0</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>App Version v{currentVersion || '...'}</div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
               {status === 'idle' && 'Check for latest updates'}
               {status === 'checking' && 'Đang kiểm tra cập nhật...'}

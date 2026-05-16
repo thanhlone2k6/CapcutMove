@@ -1,4 +1,4 @@
-import { ipcMain, dialog, shell, clipboard } from 'electron'
+import { ipcMain, dialog, shell, clipboard, app } from 'electron'
 import * as settingsService from './settingsService'
 import * as projectResolver from './projectResolver'
 import * as capcutLocator from './capcutLocator'
@@ -137,5 +137,9 @@ export function registerIpcHandlers(mainWindow: Electron.BrowserWindow) {
 
   ipcMain.handle('auto-detect-folder', async () => {
     return await capcutLocator.autoDetectFolder()
+  })
+
+  ipcMain.handle('get-app-version', () => {
+    return app.getVersion()
   })
 }
