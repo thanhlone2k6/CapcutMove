@@ -160,7 +160,7 @@ export async function importPackage(params: ImportParams, sendProgress: (info: a
       await fs.move(extractedAssetsDir, finalAssetsDir, { overwrite: true })
     }
 
-    let patchReport = null
+    let patchReport: any = null
     if (doPatch) {
       emit({
         stage: 'patching_paths', message: 'Patching media paths...',
