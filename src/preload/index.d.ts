@@ -41,6 +41,7 @@ export interface API {
   checkForUpdates: () => Promise<any>
   restartAppToUpdate: () => Promise<void>
   onUpdateStatus: (callback: (updateInfo: any) => void) => () => void
+  getAppVersion: () => Promise<string>
 }
 
 declare global {
