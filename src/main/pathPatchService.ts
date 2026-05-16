@@ -28,24 +28,37 @@ async function getJsonFilesToPatch(projectPath: string): Promise<string[]> {
 
   // 2. Files in Timelines/[UUID]/
   const timelinesDir = path.join(projectPath, 'Timelines')
+  console.log('[PATCH-DEBUG] projectPath:', projectPath)
+  console.log('[PATCH-DEBUG] timelinesDir:', timelinesDir)
+  console.log('[PATCH-DEBUG] timelinesDir exists:', await fs.pathExists(timelinesDir))
+
   if (await fs.pathExists(timelinesDir)) {
     const stat = await fs.stat(timelinesDir)
+    console.log('[PATCH-DEBUG] timelinesDir isDirectory:', stat.isDirectory())
+
     if (stat.isDirectory()) {
       const items = await fs.readdir(timelinesDir)
+      console.log('[PATCH-DEBUG] items in Timelines:', items)
+
       for (const item of items) {
         const itemPath = path.join(timelinesDir, item)
         const itemStat = await fs.stat(itemPath)
+        console.log('[PATCH-DEBUG] item:', item, '| isDirectory:', itemStat.isDirectory())
+
         if (itemStat.isDirectory()) {
           const timelineFiles = ['draft_content.json', 'template.json']
           for (const f of timelineFiles) {
             const fp = path.join(itemPath, f)
-            if (await fs.pathExists(fp)) filesToPatch.push(fp)
+            const exists = await fs.pathExists(fp)
+            console.log('[PATCH-DEBUG]   checking:', fp, '| exists:', exists)
+            if (exists) filesToPatch.push(fp)
           }
         }
       }
     }
   }
 
+  console.log('[PATCH-DEBUG] FINAL filesToPatch:', filesToPatch)
   return filesToPatch
 }
 
@@ -218,7 +231,7 @@ export async function patchPaths(params: PatchParams, sendProgress: (info: any) 
     fallbackReplacementsCount += fileFallbackCount
 
     patchedFilesInfo.push({
-      file: path.basename(fp),
+      file: path.relative(projectPath, fp),
       replacements: fileExactCount + fileFallbackCount,
       exactReplacements: fileExactCount,
       fallbackReplacements: fileFallbackCount
