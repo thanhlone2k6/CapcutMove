@@ -357,9 +357,9 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
   }, [scanResult])
 
   return (
-    <div style={{ display: 'flex', gap: 16, height: 'calc(100vh - 94px)' }}>
+    <div style={{ display: 'flex', gap: 20, height: 'calc(100vh - 94px)', padding: '0 4px' }}>
       {/* LEFT COLUMN: Settings & Export */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', paddingRight: 4 }}>
+      <div style={{ flex: '4.5', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', paddingRight: 4 }}>
         <div className="card" style={{ marginBottom: 0 }}>
           <h2>1. Settings</h2>
           <div className="input-group">
@@ -550,7 +550,7 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
       </div>
 
       {/* RIGHT COLUMN: Project Preview */}
-      <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', overflowY: 'hidden' }}>
+      <div style={{ flex: '5.5', display: 'flex', flexDirection: 'column', overflowY: 'hidden' }}>
         <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '100%', marginBottom: 0, padding: 0 }}>
           <div style={{ padding: 20, borderBottom: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

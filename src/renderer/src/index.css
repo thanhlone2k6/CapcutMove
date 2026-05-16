@@ -646,10 +646,10 @@ h3 {
 /* Project List */
 .project-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 16px;
   margin-top: 16px;
-  max-height: 400px;
+  max-height: 100%;
   overflow-y: auto;
   padding-right: 8px;
 }
