@@ -3,6 +3,7 @@ import fs from 'fs-extra'
 import path from 'path'
 import unzipper from 'unzipper'
 import { patchPaths } from './pathPatchService'
+import { trackImportCompleted, trackImportFailed } from './analytics'
 
 export interface ImportParams {
   zipPath: string
@@ -183,11 +184,16 @@ export async function importPackage(params: ImportParams, sendProgress: (info: a
       processedFiles: totalFiles, totalFiles
     })
 
+    trackImportCompleted(totalFiles, doPatch)
+
     return {
       newProjectPath: targetProjectDir,
       newAssetsPath: finalAssetsDir,
       patchReport
     }
+  } catch (error: any) {
+    trackImportFailed(error.message || String(error))
+    throw error
   } finally {
     try {
       await fs.remove(tempDir)

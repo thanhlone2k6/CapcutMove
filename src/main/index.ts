@@ -4,6 +4,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { registerIpcHandlers } from './ipcHandlers'
 import { setupAutoUpdater } from './updateService'
+import { trackAppOpened, shutdownAnalytics } from './analytics'
 import fs from 'fs-extra'
 
 function createWindow(): void {
@@ -45,6 +46,9 @@ function createWindow(): void {
   
   // Initialize auto updater
   setupAutoUpdater(mainWindow)
+
+  // Track app opened event
+  trackAppOpened()
 }
 
 // This method will be called when Electron has finished
@@ -116,6 +120,10 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
+})
+
+app.on('before-quit', () => {
+  shutdownAnalytics()
 })
 
 // In this file you can include the rest of your app's specific main process

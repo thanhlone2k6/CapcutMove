@@ -150,6 +150,12 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
   }
 
   useEffect(() => {
+    if (settings?.lastCapCutProjectsFolder !== undefined) {
+      setCapcutFolder(settings.lastCapCutProjectsFolder || '')
+    }
+  }, [settings?.lastCapCutProjectsFolder])
+
+  useEffect(() => {
     if (capcutFolder) loadProjects(capcutFolder)
   }, [capcutFolder])
 

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Folder, FileArchive, CheckCircle, Copy, FolderOpen, AlertTriangle } from 'lucide-react'
 import ConflictModal from '../components/ConflictModal'
 
@@ -37,6 +37,12 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
   const [zipPath, setZipPath] = useState('')
   const [capcutFolder, setCapcutFolder] = useState(settings.lastCapCutProjectsFolder || '')
   const [patchPaths, setPatchPaths] = useState(true)
+
+  useEffect(() => {
+    if (settings?.lastCapCutProjectsFolder !== undefined) {
+      setCapcutFolder(settings.lastCapCutProjectsFolder || '')
+    }
+  }, [settings?.lastCapCutProjectsFolder])
 
   const [isImporting, setIsImporting] = useState(false)
   const [progress, setProgress] = useState<any>(null)

@@ -12,7 +12,23 @@ function App(): React.JSX.Element {
   const [showDonate, setShowDonate] = useState(false)
 
   useEffect(() => {
-    window.api.getSettings().then(setSettings)
+    window.api.getSettings().then(async (loadedSettings) => {
+      const currentSettings = { ...loadedSettings }
+      const folderPath = currentSettings.lastCapCutProjectsFolder
+      let exists = false
+      if (folderPath) {
+        exists = await window.api.checkPathExists(folderPath, '')
+      }
+
+      if (!folderPath || !exists) {
+        const autoPath = await window.api.autoDetectFolder()
+        if (autoPath) {
+          currentSettings.lastCapCutProjectsFolder = autoPath
+          await window.api.saveSettings({ lastCapCutProjectsFolder: autoPath })
+        }
+      }
+      setSettings(currentSettings)
+    })
   }, [])
 
   if (!settings) return <div className="app-container" style={{ padding: 24 }}>Loading...</div>

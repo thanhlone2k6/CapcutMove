@@ -1,7 +1,7 @@
 {
   "name": "capcut-move",
   "productName": "CapCutMove",
-  "version": "6.1.0",
+  "version": "6.2.0",
   "description": "CapCut Project Collector - Move projects easily",
   "main": "./out/main/index.js",
   "author": "example.com",
@@ -32,6 +32,7 @@
     "framer-motion": "^12.38.0",
     "fs-extra": "^11.3.4",
     "lucide-react": "^1.14.0",
+    "posthog-node": "^5.34.2",
     "unzipper": "^0.12.3"
   },
   "devDependencies": {
