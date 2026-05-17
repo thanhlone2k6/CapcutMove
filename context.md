@@ -88,23 +88,37 @@ Khi dự án được mang sang máy mới, các đường dẫn tĩnh (VD: ổ 
 2. **Kỹ thuật Thao tác chuỗi An toàn:**
    - Việc dùng Regex `String.replace()` để thay thế hàng loạt đường dẫn trong một file JSON nặng 50MB là tự sát do hiện tượng "Catastrophic Backtracking" (gây kẹt CPU).
    - Ứng dụng sử dụng một mẹo cực kỳ tốc độ: **`content.split(chuỗi_cũ).join(chuỗi_mới)`**. Phương thức chia cắt và hợp nhất mảng này loại bỏ hoàn toàn Regex ở khâu ghi đè, chạy với tốc độ chớp mắt và an toàn tuyệt đối cho mọi ký tự đặc biệt có trong đường dẫn hệ điều hành.
+3. **Báo cáo Debug Nâng cao (`patched_files.json`):**
+   - Khi tiến hành Relink cho các timeline phức tạp hoặc chứa timeline lồng nhau trong thư mục `Timelines/[UUID]/`, nhiều file cấu hình cùng mang tên `draft_content.json` sẽ được patch.
+   - Thay vì lưu tên file trần (`draft_content.json`), thuật toán cải tiến sử dụng **đường dẫn tương đối so với thư mục dự án** (VD: `Timelines/1a2b3c.../draft_content.json`). Điều này giúp phân biệt rõ ràng và tăng tối đa khả năng kiểm thử gỡ lỗi cho lập trình viên và người dùng nâng cao.
+
+### E. Hệ thống Định danh và Phân tích Dữ liệu (PostHog Analytics Integration)
+Kể từ phiên bản v6.2.0, ứng dụng tích hợp hệ thống tracking an toàn qua **PostHog Node.js SDK** trong Main Process (`src/main/analytics.ts`):
+
+1. **Định danh Khách hàng Trực quan (Anonymous ID):**
+   - Định danh duy nhất được lưu trữ tại file `analytics_id.json` ở phân vùng `userData` của hệ điều hành.
+   - Nếu chưa tồn tại, hệ thống sinh ngẫu nhiên UUID dạng phiên bản 4 (`crypto.randomUUID()`) và lưu trữ vĩnh viễn. Đảm bảo tính bảo mật và sự riêng tư tuyệt đối cho khách hàng mà không thu thập dữ liệu cá nhân nhạy cảm.
+2. **Ghi nhận Vòng đời & Sự kiện cốt lõi (Event Tracking):**
+   - `app_opened`: Gửi ngay khi app khởi tạo cửa sổ chính xong, bao gồm hệ điều hành (`platform`) và phiên bản sản phẩm (`appVersion`).
+   - `import_completed`: Ghi lại sau khi import thành công một file ZIP, lưu kèm số lượng tệp tin và trạng thái kích hoạt patch đường dẫn.
+   - `import_failed`: Ghi nhận sự cố phát sinh kèm thông tin chi tiết lỗi.
+3. **Bọc lỗi & Tắt dọn dẹp An toàn (Failsafe & Graceful Shutdown):**
+   - Toàn bộ lệnh gửi sự kiện đều được bọc trong các khối `try/catch` nghiêm ngặt. Nếu người dùng mất kết nối Internet hoặc API Key có trục trặc, ứng dụng **tuyệt đối không phát sinh crash** hay gián đoạn trải nghiệm người dùng.
+   - Khi ứng dụng nhận tín hiệu `before-quit` từ hệ điều hành, lệnh `posthog.shutdown()` được kích hoạt để tiến hành làm sạch bộ nhớ và truyền gửi tất cả event còn tồn trong bộ đệm lên server trước khi tiến trình chính thức kết thúc.
 
 ## 6. Giao tiếp & Tương tác trong App (App Interaction & Features)
 
 ### A. Tương tác Người dùng & Tính năng UI
-- **Quản lý Layout:** Màn hình chia làm 2 vùng hiển thị: Vùng Cài đặt/Tiến độ bên trái và Lưới Preview Dự án (Grid) bên phải.
-- **Auto Detect & Chọn thư mục:** Người dùng nhấn nút "Auto Detect", App tự dùng tính năng dò tìm vị trí cài đặt CapCut, sau đó load danh sách dự án tức thì.
-- **Bộ lọc và Sắp Xếp (Filter & Sort):** Người dùng có thể tìm kiếm dự án bằng tên (đã lọc loại bỏ dấu tiếng Việt để tìm dễ dàng hơn) và áp dụng các tiêu chí sắp xếp như: Mới nhất, Cũ nhất, Dung lượng lớn/nhỏ, Tên A-Z.
-- **Auto Check & Scan:** Click chọn một dự án, ứng dụng chạy ngầm hai tác vụ kiểm tra (`checkProject`) và quét tài nguyên (`scanAssets`). Giao diện ngay lập tức thông báo trạng thái "Hợp lệ" và tổng hợp số liệu (tổng file, dung lượng) mà không bắt người dùng nhấn thêm thao tác nào.
-- **Giao diện Tiến độ (Progress UI):** Khi Export/Import khởi chạy, giao diện thay đổi linh hoạt:
-  - Hiển thị thanh Progress Bar cực dày bản.
-  - Cập nhật số liệu thời gian thực: Dung lượng, Tốc độ MB/s, và Thời gian dự kiến (ETA).
-  - Tích hợp một Stopwatch ở trên cùng nút thao tác.
-  - Cung cấp nút Cancel hỗ trợ hủy ngang luồng mọi lúc.
-- **Xử lý Xung Đột (Conflict Handling - `ConflictModal`):** 
-  - **CapCut đang chạy:** Nếu thao tác lúc phần mềm đang mở, Modal cảnh báo xuất hiện yêu cầu "Đóng CapCut" để tránh hỏng dữ liệu.
-  - **Trùng file:** Nếu file ZIP đích hoặc Dự án đích đã tồn tại, Modal cung cấp 2 tùy chọn nhanh: "Ghi đè" hoặc "Tự động đổi tên thêm số" để tránh bị chặn luồng.
-- **Hành động Liên mạch:** Khi quá trình thành công, UI cung cấp ngay phím tắt "Open Folder" và "Locate ZIP" để tương tác trực tiếp với file trên hệ điều hành.
+- **Khởi động Tự động Refresh & Tự động quét (Zero-Click Scanning):**
+  - Ngay khi vừa mở app, ứng dụng sẽ kiểm tra thư mục lưu dự án cuối cùng. Nếu trống hoặc không tồn tại trên ổ đĩa, thuật toán tự động kích hoạt chế độ **Dò tìm Auto-Detect**, tìm ra thư mục CapCut mặc định và nạp ngay cấu hình.
+  - Người dùng lập tức thấy toàn bộ dự án hiện lên trực quan mà không cần thực hiện bất kỳ thao tác click chuột cấu hình nào.
+- **Đồng bộ hóa Trạng thái Đa trang (Cross-Page Sync):**
+  - Mọi thao tác thay đổi thư mục nguồn CapCut tại một tab (VD: Export) sẽ tự động kích hoạt đồng bộ hóa tức thì sang tab kia (VD: Import). Điều này tránh hiện tượng lệch thông tin và đảm bảo tính nhất quán của dữ liệu.
+- **Cảnh báo File Thiếu (Warning Alert Banner):**
+  - Sau khi quét tài nguyên dự án hoàn tất, nếu phát hiện có bất kỳ file media gốc nào bị mất/không tìm thấy trên đĩa (trực quan hóa bằng status `missing`), giao diện hiển thị ngay một banner cảnh báo màu vàng chuyên nghiệp.
+  - Banner liệt kê rõ ràng danh sách tối đa 3 file bị mất và tổng số file thiếu, giúp người dùng chủ động kiểm tra trước khi tiến hành đóng gói xuất bản.
+- **Phiên bản Động (Dynamic Versioning):**
+  - Thay vì hardcode phiên bản, ứng dụng tự động load trực tiếp số phiên bản hiện tại từ `package.json` thông qua API IPC `get-app-version`, đảm bảo hiển thị đồng bộ `App Version v{currentVersion}` ở mọi vị trí UI.
 
 ### B. Giao tiếp Hệ thống (Architecture Communication)
 - **Cầu nối IPC & Preload:** Mọi luồng tương tác giữa UI (React) và logic Core (Node.js) chạy qua một API Context an toàn được cấu hình ở `preload/index.ts` (`window.api`).
@@ -112,4 +126,4 @@ Khi dự án được mang sang máy mới, các đường dẫn tĩnh (VD: ổ 
 - **Event-Driven Progress:** Thông qua `sendProgress`, tiến trình cập nhật được đẩy về Renderer dưới dạng Event liên tục. React State tiếp nhận để re-render chỉ riêng những thanh đo (progress bars) mà không ảnh hưởng toàn cục trang.
 
 ---
-*Tài liệu này được cập nhật vào ngày 16/05/2026 bởi Antigravity.*
+*Tài liệu này được cập nhật vào ngày 18/05/2026 bởi Antigravity.*
