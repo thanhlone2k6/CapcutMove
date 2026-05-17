@@ -13,6 +13,49 @@
 
 ## 3. Cấu trúc chi tiết mã nguồn
 
+### 📂 Sơ đồ Cấu trúc Thư mục & Tệp tin (Directory Tree)
+```
+capcut-move/
+├── out/                      # Thư mục chứa mã nguồn biên dịch chạy thực tế (tự sinh)
+├── release/                  # Chứa các bản cài đặt đóng gói (.exe, latest.yml, blockmap)
+├── src/                      # Mã nguồn chính của ứng dụng
+│   ├── main/                 # Main Process (Xử lý tác vụ hệ thống & Node.js APIs)
+│   │   ├── analytics.ts      # Khởi tạo và theo dõi telemetry qua PostHog Node SDK
+│   │   ├── assetCollector.ts # Thuật toán quét đệ quy trích xuất file media, font chữ
+│   │   ├── capcutLocator.ts  # Tự động dò tìm thư mục lưu dự án mặc định của CapCut
+│   │   ├── importService.ts  # Giải nén ZIP64, khôi phục project & relink path an toàn
+│   │   ├── index.ts          # Điểm khởi chạy Electron, quản lý cửa sổ & safe-file://
+│   │   ├── ipcHandlers.ts    # Lắng nghe và điều phối các kênh giao tiếp IPC
+│   │   ├── pathPatchService.ts # Đổi đường dẫn tuyệt đối, xuất báo cáo patched_files.json
+│   │   ├── processChecker.ts # Quản lý trạng thái hoạt động (bật/tắt) của CapCut PC
+│   │   ├── projectResolver.ts# Quét, xác thực cấu trúc & trích xuất thumbnail của dự án
+│   │   ├── settingsService.ts# Đọc/ghi file app-settings.json lưu thiết lập cục bộ
+│   │   ├── updateService.ts  # Quản lý tự động check & tải ngầm bản cập nhật từ GitHub
+│   │   └── zipService.ts     # Công cụ nén streaming Deflate Level 9 tránh tràn RAM
+│   ├── preload/              # Preload Script (Cầu nối bảo mật IPC)
+│   │   ├── index.d.ts        # Định nghĩa kiểu dữ liệu (Types) cho window.api
+│   │   └── index.ts          # Expose an toàn API chính qua contextBridge ra Renderer
+│   └── renderer/             # Renderer Process (Giao diện người dùng React)
+│       ├── index.html        # File HTML gốc của giao diện
+│       └── src/              # Mã nguồn React + TypeScript
+│           ├── assets/       # Tài nguyên đồ họa tĩnh (QR Code, logo mạng xã hội...)
+│           ├── components/   # Các Component React dùng chung toàn app
+│           │   ├── CreatorWidget.tsx  # Widget thông tin tác giả và Donate ghim góc phải
+│           │   ├── SupportModal.tsx   # Modal hiển thị QR Code chuyển khoản donate
+│           │   └── UpdateWidget.tsx   # Toast cập nhật và nút check bản update thủ công
+│           ├── pages/        # Các trang tính năng chính
+│           │   ├── ExportProject.tsx  # Trang đóng gói & xuất bản dự án
+│           │   └── ImportProject.tsx  # Trang phục hồi dự án từ file ZIP lưu trữ
+│           ├── App.tsx       # Bố cục giao diện chính, Tab Control và Blocking Update Screen
+│           ├── index.css     # Thiết kế Glassmorphism, animations và styles toàn cục
+│           └── main.tsx      # Entrypoint khởi tạo React 18 DOM
+├── electron-builder.yml      # Cấu hình đóng gói cài đặt và cấu hình cập nhật tự động
+├── electron.vite.config.ts   # Cấu hình build đa phân vùng bằng electron-vite
+├── package.json              # Quản lý các thư viện cài đặt và số phiên bản của app
+├── tsconfig.json             # Thiết lập trình biên dịch TypeScript
+└── context.md                # Tài liệu bối cảnh chi tiết của hệ thống
+```
+
 ### A. Main Process (`src/main/`)
 Quản lý các tác vụ hệ thống và tương tác trực tiếp với hệ điều hành.
 - **`index.ts`**: Điểm khởi đầu của ứng dụng. Thiết lập cửa sổ chính, đăng ký giao thức bảo mật `safe-file://` để hiển thị ảnh thumbnail và icon từ ổ cứng mà không vi phạm chính sách bảo mật của Chrome.
