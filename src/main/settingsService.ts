@@ -10,6 +10,8 @@ export interface AppSettings {
   lastAssetsOutputFolder: string
   lastSelectedProject: string
   lastSortMode: string
+  lastVideoOutputDir: string
+  videoDownloadMode: 'video' | 'audio'
 }
 
 const defaultSettings: AppSettings = {
@@ -17,7 +19,9 @@ const defaultSettings: AppSettings = {
   lastOutputFolder: '',
   lastAssetsOutputFolder: '',
   lastSelectedProject: '',
-  lastSortMode: 'Newest First'
+  lastSortMode: 'Newest First',
+  lastVideoOutputDir: '',
+  videoDownloadMode: 'video'
 }
 
 export async function getSettings(): Promise<AppSettings> {

@@ -194,7 +194,7 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
     : safeNumber(progress?.percent, 0)
 
   return (
-    <div style={{ height: 'calc(100vh - 94px)', overflowY: 'auto', paddingRight: 4 }}>
+    <div style={{ height: '100%', overflowY: 'auto', paddingRight: 8, paddingBottom: 24 }}>
 
       <div className="card">
         <h2>1. Select ZIP Package</h2>

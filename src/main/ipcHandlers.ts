@@ -7,6 +7,8 @@ import * as assetCollector from './assetCollector'
 import * as zipService from './zipService'
 import * as importService from './importService'
 import * as pathPatchService from './pathPatchService'
+import * as licenseService from './licenseService'
+import * as videoDownloadService from './videoDownloadService'
 import fs from 'fs-extra'
 import path from 'path'
 import { getAvailableName } from './utils'
@@ -141,5 +143,72 @@ export function registerIpcHandlers(mainWindow: Electron.BrowserWindow) {
 
   ipcMain.handle('get-app-version', () => {
     return app.getVersion()
+  })
+
+  // ─── License handlers ─────────────────────────────────────
+  ipcMain.handle('license:validate', (_event, key: string) => {
+    return { valid: licenseService.isValidKey(key) }
+  })
+
+  ipcMain.handle('license:activate', (_event, key: string) => {
+    const valid = licenseService.isValidKey(key)
+    if (valid) {
+      licenseService.saveLicense(key)
+    }
+    return { success: valid }
+  })
+
+  ipcMain.handle('license:check', () => {
+    return { active: licenseService.isLicenseActive() }
+  })
+
+  // ─── Video download handlers ──────────────────────────────
+  ipcMain.handle('download:start', async (_event, params: { url: string; outputDir: string; mode: 'video' | 'audio' }) => {
+    const id = await videoDownloadService.startDownload(mainWindow, params.url, params.outputDir, params.mode)
+    return { id }
+  })
+
+  ipcMain.handle('download:cancel', (_event, params: { id: string }) => {
+    videoDownloadService.cancelDownload(params.id)
+  })
+
+  ipcMain.handle('download:openFile', async (_event, params: { filePath: string }) => {
+    await shell.openPath(params.filePath)
+  })
+
+  ipcMain.handle('download:showInFolder', (_event, params: { filePath: string }) => {
+    try {
+      const fs = require('fs-extra')
+      const path = require('path')
+      
+      if (params.filePath && fs.existsSync(params.filePath)) {
+        shell.showItemInFolder(params.filePath)
+      } else if (params.filePath) {
+        // Fallback: Open containing folder if file not found
+        const dir = path.dirname(params.filePath)
+        if (fs.existsSync(dir)) {
+          shell.openPath(dir)
+        }
+      }
+    } catch (err) {
+      console.error('Failed to show item in folder:', err)
+    }
+  })
+
+  ipcMain.handle('download:deleteFile', async (_event, params: { filePath: string }) => {
+    await fs.remove(params.filePath)
+  })
+
+  ipcMain.handle('download:checkYtDlp', async () => {
+    return { ready: await videoDownloadService.checkYtDlpReady() }
+  })
+
+  ipcMain.handle('download:ensureYtDlp', async () => {
+    await videoDownloadService.ensureYtDlp()
+    return { ready: true }
+  })
+
+  ipcMain.handle('read-clipboard', () => {
+    return clipboard.readText()
   })
 }

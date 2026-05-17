@@ -1,16 +1,29 @@
-import { useState, useEffect } from 'react'
-import { ArrowUpCircle, RefreshCw } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { ArrowUpCircle, RefreshCw, Star, Lock, Download as DownloadIcon, Zap } from 'lucide-react'
 import ExportProject from './pages/ExportProject'
 import ImportProject from './pages/ImportProject'
+import VipGate from './pages/VipGate'
+import VideoDownloader from './pages/VideoDownloader'
 import CreatorWidget from './components/CreatorWidget'
 import SupportModal from './components/SupportModal'
 import UpdateWidget from './components/UpdateWidget'
 import './index.css'
 
+type MainTab = 'free' | 'vip'
+type FreeSubTab = 'export' | 'import'
+type VipSubTab = 'download'
+
 function App(): React.JSX.Element {
-  const [activeTab, setActiveTab] = useState<'export' | 'import'>('export')
+  const [activeTab, setActiveTab] = useState<MainTab>('free')
+  const [freeSubTab, setFreeSubTab] = useState<FreeSubTab>('export')
+  const [vipSubTab, setVipSubTab] = useState<VipSubTab>('download')
   const [settings, setSettings] = useState<any>(null)
   const [showDonate, setShowDonate] = useState(false)
+  const [isVipActive, setIsVipActive] = useState(false)
+  const [vipChecked, setVipChecked] = useState(false)
+  const [downloadActiveCount, setDownloadActiveCount] = useState(0)
+  const [showVipToast, setShowVipToast] = useState(false)
+  const vipToastShown = useRef(false)
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error'>('idle')
   const [updateProgress, setUpdateProgress] = useState<any>(null)
   const [updateInfo, setUpdateInfo] = useState<any>(null)
@@ -34,6 +47,12 @@ function App(): React.JSX.Element {
       setSettings(currentSettings)
     })
 
+    // Check VIP status
+    window.api.license.check().then(({ active }) => {
+      setIsVipActive(active)
+      setVipChecked(true)
+    })
+
     const unsub = window.api.onUpdateStatus((info: any) => {
       setUpdateStatus(info.status)
       if (info.status === 'downloading') {
@@ -45,11 +64,20 @@ function App(): React.JSX.Element {
     return () => unsub()
   }, [])
 
-  const handleRestart = () => {
+  const handleVipActivated = (): void => {
+    setIsVipActive(true)
+    if (!vipToastShown.current) {
+      vipToastShown.current = true
+      setShowVipToast(true)
+      setTimeout(() => setShowVipToast(false), 3000)
+    }
+  }
+
+  const handleRestart = (): void => {
     window.api.restartAppToUpdate()
   }
 
-  const formatBytes = (bytes: number) => {
+  const formatBytes = (bytes: number): string => {
     if (!bytes) return '0 B'
     const k = 1024
     const sizes = ['B', 'KB', 'MB', 'GB']
@@ -57,11 +85,12 @@ function App(): React.JSX.Element {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
   }
 
-  const formatSpeed = (bytesPerSec: number) => {
+  const formatSpeed = (bytesPerSec: number): string => {
     if (!bytesPerSec) return '0 KB/s'
     return formatBytes(bytesPerSec) + '/s'
   }
 
+  // ─── Update Blocking Screen ─────────────────────────
   if (updateStatus === 'available' || updateStatus === 'downloading' || updateStatus === 'downloaded') {
     const percent = Math.floor(updateProgress?.percent || 0)
     const transferredStr = formatBytes(updateProgress?.transferred || 0)
@@ -140,28 +169,116 @@ function App(): React.JSX.Element {
 
       {showDonate && <SupportModal onClose={() => setShowDonate(false)} />}
 
+      {/* VIP Toast */}
+      {showVipToast && (
+        <div className="vip-activated-toast">
+          <Star size={14} />
+          <span>VIP đang hoạt động ✓</span>
+        </div>
+      )}
+
+      {/* ═══ Main Tab Bar ═══ */}
       <div className="header">
         <button 
-          className={`tab-btn ${activeTab === 'export' ? 'active' : ''}`}
-          onClick={() => setActiveTab('export')}
+          className={`tab-btn tab-btn-free ${activeTab === 'free' ? 'active' : ''}`}
+          onClick={() => setActiveTab('free')}
         >
-          Export Project
+          <Zap size={14} className="tab-free-icon" />
+          Free
         </button>
         <button 
-          className={`tab-btn ${activeTab === 'import' ? 'active' : ''}`}
-          onClick={() => setActiveTab('import')}
+          className={`tab-btn tab-btn-vip ${activeTab === 'vip' ? 'active' : ''}`}
+          onClick={() => setActiveTab('vip')}
         >
-          Import Project
+          {isVipActive ? (
+            <Star size={14} className="tab-vip-icon unlocked" />
+          ) : (
+            <Lock size={12} className="tab-vip-icon locked" />
+          )}
+          VIP
         </button>
       </div>
 
       <div className="main-content">
         <UpdateWidget />
-        <div style={{ display: activeTab === 'export' ? 'block' : 'none', height: '100%' }}>
-          <ExportProject settings={settings} onSettingsChange={setSettings} />
+
+        {/* ═══ FREE TAB ═══ */}
+        <div style={{ display: activeTab === 'free' ? 'flex' : 'none', height: '100%', flexDirection: 'column' }}>
+          {/* Free sub-tabs */}
+          <div className="free-sub-tabs">
+            <button
+              className={`free-sub-tab ${freeSubTab === 'export' ? 'active' : ''}`}
+              onClick={() => setFreeSubTab('export')}
+            >
+              Export Project
+            </button>
+            <button
+              className={`free-sub-tab ${freeSubTab === 'import' ? 'active' : ''}`}
+              onClick={() => setFreeSubTab('import')}
+            >
+              Import Project
+            </button>
+          </div>
+
+          {/* Free sub-tab content */}
+          <div className="free-sub-content">
+            <div style={{ display: freeSubTab === 'export' ? 'block' : 'none', height: '100%' }}>
+              <ExportProject settings={settings} onSettingsChange={setSettings} />
+            </div>
+            <div style={{ display: freeSubTab === 'import' ? 'block' : 'none', height: '100%' }}>
+              <ImportProject settings={settings} onSettingsChange={setSettings} />
+            </div>
+          </div>
         </div>
-        <div style={{ display: activeTab === 'import' ? 'block' : 'none', height: '100%' }}>
-          <ImportProject settings={settings} onSettingsChange={setSettings} />
+
+        {/* ═══ VIP TAB ═══ */}
+        <div style={{ display: activeTab === 'vip' ? 'flex' : 'none', height: '100%', flexDirection: 'column' }}>
+          {/* VIP sub-tabs (always visible even when locked) */}
+          <div className="vip-sub-tabs">
+            <button
+              className={`vip-sub-tab ${vipSubTab === 'download' ? 'active' : ''}`}
+              onClick={() => setVipSubTab('download')}
+            >
+              <DownloadIcon size={14} />
+              <span>Tải Video</span>
+              {isVipActive && downloadActiveCount > 0 && (
+                <span className="vip-sub-tab-badge">{downloadActiveCount}</span>
+              )}
+            </button>
+            {/* More sub-tabs can be added here */}
+          </div>
+
+          {/* VIP sub-tab content — with lock overlay when inactive */}
+          <div className="vip-sub-content">
+            {/* Blurred preview behind overlay when locked */}
+            <div
+              className={`vip-preview-layer ${!isVipActive ? 'locked' : ''}`}
+              style={{ display: vipSubTab === 'download' ? 'flex' : 'none', height: '100%', width: '100%', minHeight: 0, overflow: 'hidden' }}
+            >
+              <VideoDownloader
+                settings={settings}
+                onSettingsChange={setSettings}
+                onActiveCountChange={setDownloadActiveCount}
+              />
+            </div>
+
+            {/* Lock overlay — only when not activated */}
+            {vipChecked && !isVipActive && (
+              <div className="vip-lock-overlay">
+                <VipGate onActivated={handleVipActivated} />
+              </div>
+            )}
+
+            {/* Loading state while checking */}
+            {!vipChecked && (
+              <div className="vip-lock-overlay">
+                <div className="vdl-engine-status">
+                  <div className="spin" style={{ width: 16, height: 16, border: '2px solid var(--accent-purple)', borderTopColor: 'transparent', borderRadius: '50%' }} />
+                  <span>Đang kiểm tra...</span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -169,4 +286,3 @@ function App(): React.JSX.Element {
 }
 
 export default App
-

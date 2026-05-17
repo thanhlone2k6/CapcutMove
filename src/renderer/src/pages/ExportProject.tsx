@@ -363,7 +363,7 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
   }, [scanResult])
 
   return (
-    <div style={{ display: 'flex', gap: 20, height: 'calc(100vh - 94px)', padding: '0 4px' }}>
+    <div style={{ display: 'flex', gap: 20, height: '100%', padding: '0 4px', paddingBottom: 24 }}>
       {/* LEFT COLUMN: Settings & Export */}
       <div style={{ flex: '4.5', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', paddingRight: 4 }}>
         <div className="card" style={{ marginBottom: 0 }}>

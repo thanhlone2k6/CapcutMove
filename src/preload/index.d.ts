@@ -10,6 +10,20 @@ export interface ProjectInfo {
   coverDataUrl: string | null
 }
 
+export interface DownloadTask {
+  id: string
+  url: string
+  status: 'queued' | 'downloading' | 'done' | 'error' | 'cancelled'
+  title?: string
+  progress: number
+  downloadedBytes: number
+  totalBytes: number
+  speed?: string
+  filePath?: string
+  error?: string
+  mode: 'video' | 'audio'
+}
+
 export interface API {
   selectFolder: () => Promise<string | null>
   selectZipFile: () => Promise<string | null>
@@ -42,6 +56,30 @@ export interface API {
   restartAppToUpdate: () => Promise<void>
   onUpdateStatus: (callback: (updateInfo: any) => void) => () => void
   getAppVersion: () => Promise<string>
+
+  // License APIs
+  license: {
+    validate: (key: string) => Promise<{ valid: boolean }>
+    activate: (key: string) => Promise<{ success: boolean }>
+    check: () => Promise<{ active: boolean }>
+  }
+
+  // Video Download APIs
+  download: {
+    start: (params: { url: string; outputDir: string; mode: 'video' | 'audio' }) => Promise<{ id: string }>
+    cancel: (id: string) => Promise<void>
+    openFile: (filePath: string) => Promise<void>
+    showInFolder: (filePath: string) => Promise<void>
+    deleteFile: (filePath: string) => Promise<void>
+    checkYtDlp: () => Promise<{ ready: boolean }>
+    ensureYtDlp: () => Promise<{ ready: boolean }>
+    onProgress: (callback: (task: DownloadTask) => void) => () => void
+    onDone: (callback: (task: DownloadTask) => void) => () => void
+    onError: (callback: (task: DownloadTask) => void) => () => void
+  }
+
+  // Clipboard
+  readClipboard: () => Promise<string>
 }
 
 declare global {

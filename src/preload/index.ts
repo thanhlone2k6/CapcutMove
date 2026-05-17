@@ -45,7 +45,44 @@ const api = {
     ipcRenderer.on('update-status', subscription)
     return () => ipcRenderer.removeListener('update-status', subscription)
   },
-  getAppVersion: () => ipcRenderer.invoke('get-app-version')
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+
+  // License APIs
+  license: {
+    validate: (key: string) => ipcRenderer.invoke('license:validate', key),
+    activate: (key: string) => ipcRenderer.invoke('license:activate', key),
+    check: () => ipcRenderer.invoke('license:check')
+  },
+
+  // Video Download APIs
+  download: {
+    start: (params: { url: string; outputDir: string; mode: 'video' | 'audio' }) =>
+      ipcRenderer.invoke('download:start', params),
+    cancel: (id: string) => ipcRenderer.invoke('download:cancel', { id }),
+    openFile: (filePath: string) => ipcRenderer.invoke('download:openFile', { filePath }),
+    showInFolder: (filePath: string) => ipcRenderer.invoke('download:showInFolder', { filePath }),
+    deleteFile: (filePath: string) => ipcRenderer.invoke('download:deleteFile', { filePath }),
+    checkYtDlp: () => ipcRenderer.invoke('download:checkYtDlp'),
+    ensureYtDlp: () => ipcRenderer.invoke('download:ensureYtDlp'),
+    onProgress: (callback: (task: any) => void) => {
+      const sub = (_event: any, task: any) => callback(task)
+      ipcRenderer.on('download:progress', sub)
+      return () => ipcRenderer.removeListener('download:progress', sub)
+    },
+    onDone: (callback: (task: any) => void) => {
+      const sub = (_event: any, task: any) => callback(task)
+      ipcRenderer.on('download:done', sub)
+      return () => ipcRenderer.removeListener('download:done', sub)
+    },
+    onError: (callback: (task: any) => void) => {
+      const sub = (_event: any, task: any) => callback(task)
+      ipcRenderer.on('download:error', sub)
+      return () => ipcRenderer.removeListener('download:error', sub)
+    }
+  },
+
+  // Clipboard
+  readClipboard: () => ipcRenderer.invoke('read-clipboard')
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to
