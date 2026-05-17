@@ -18,6 +18,7 @@ export interface DownloadTask {
   filePath?: string
   error?: string
   mode: 'video' | 'audio'
+  thumbnailUrl?: string
 }
 
 const tasks: Map<string, DownloadTask> = new Map()
@@ -291,6 +292,43 @@ export async function startDownload(
       mainWindow.webContents.send('download:progress', { ...task })
     }
   }
+
+  // Fetch thumbnail asynchronously in the background without blocking the download process
+  const fetchThumbnail = async (): Promise<void> => {
+    try {
+      const fetchArgs = [url, '--get-thumbnail', '--no-playlist']
+      if (url.includes('tiktok.com')) {
+        fetchArgs.push('--referer', 'https://www.tiktok.com/')
+      } else if (url.includes('instagram.com')) {
+        fetchArgs.push('--referer', 'https://www.instagram.com/')
+      } else if (url.includes('facebook.com')) {
+        fetchArgs.push('--referer', 'https://www.facebook.com/')
+      }
+      
+      const thumbProcess = spawn(ytDlpPath, fetchArgs, {
+        windowsHide: true,
+        env: {
+          ...process.env,
+          PYTHONIOENCODING: 'utf-8',
+          LANG: 'en_US.UTF-8'
+        }
+      })
+      let output = ''
+      thumbProcess.stdout?.on('data', (chunk) => {
+        output += chunk.toString()
+      })
+      thumbProcess.on('close', () => {
+        const trimmed = output.trim()
+        if (trimmed && (trimmed.startsWith('http://') || trimmed.startsWith('https://'))) {
+          task.thumbnailUrl = trimmed
+          sendUpdate()
+        }
+      })
+    } catch (e) {
+      console.error('[videoDownloadService] Failed to fetch thumbnail:', e)
+    }
+  }
+  fetchThumbnail()
 
   let lastFilePath = ''
 

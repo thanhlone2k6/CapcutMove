@@ -16,6 +16,7 @@ interface DownloadTask {
   filePath?: string
   error?: string
   mode: 'video' | 'audio'
+  thumbnailUrl?: string
 }
 
 interface VideoDownloaderProps {
@@ -387,7 +388,7 @@ export default function VideoDownloader({
   }
 
   const renderTaskThumbnail = (task: DownloadTask) => {
-    const thumbUrl = getThumbnailUrl(task.url)
+    const thumbUrl = task.thumbnailUrl || getThumbnailUrl(task.url)
     if (thumbUrl) {
       return (
         <div className="vdl-task-thumbnail" style={{
