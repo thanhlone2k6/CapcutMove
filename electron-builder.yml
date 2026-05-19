@@ -27,7 +27,6 @@ mac:
         - x64
         - arm64
   category: public.app-category.productivity
-  entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
     - NSCameraUsageDescription: Application requests access to the device's camera.
     - NSMicrophoneUsageDescription: Application requests access to the device's microphone.

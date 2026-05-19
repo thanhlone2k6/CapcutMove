@@ -40,6 +40,8 @@ jobs:
           files: |
             release/*.exe
             release/latest.yml
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -74,5 +76,7 @@ jobs:
           files: |
             release/*.dmg
             release/latest-mac.yml
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
