@@ -6,8 +6,46 @@
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http:;"
+      content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: https: http:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http:;"
     />
+    <script>
+      if (typeof window !== 'undefined' && !window.api) {
+        window.api = {
+          getSettings: () => Promise.resolve({
+            lastCapCutProjectsFolder: 'C:\\Users\\admin\\AppData\\Local\\CapCut\\User Data\\Projects\\com.lveditor.draft',
+            lastOutputFolder: 'C:\\Users\\admin\\Downloads\\output'
+          }),
+          saveSettings: () => Promise.resolve(),
+          autoDetectFolder: () => Promise.resolve('C:\\Users\\admin\\AppData\\Local\\CapCut\\User Data\\Projects\\com.lveditor.draft'),
+          checkPathExists: () => Promise.resolve(true),
+          listProjects: () => Promise.resolve([
+            { name: 'desire', fullPath: 'C:\\Users\\admin\\AppData\\Local\\CapCut\\User Data\\Projects\\com.lveditor.draft\\desire', size: 1437.9 * 1024 * 1024, date: '2026-05-19', cover: '', hasCache: false }
+          ]),
+          checkProject: () => Promise.resolve({
+            valid: true,
+            totalFound: 121,
+            totalSize: 1437.9 * 1024 * 1024,
+            missingAssets: []
+          }),
+          scanAssets: () => Promise.resolve({
+            totalFound: 121,
+            totalSize: 1437.9 * 1024 * 1024,
+            missingAssets: []
+          }),
+          license: {
+            check: () => Promise.resolve({ active: false })
+          },
+          onUpdateStatus: () => () => {},
+          onProgress: () => () => {},
+          copyToClipboard: () => {},
+          openExternal: () => {},
+          getAppVersion: () => Promise.resolve('9.0.0'),
+          checkCapcutRunning: () => Promise.resolve(false),
+          selectFolder: () => Promise.resolve(''),
+          checkForUpdates: () => Promise.resolve()
+        };
+      }
+    </script>
   </head>
 
   <body>

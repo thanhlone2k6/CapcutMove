@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
-import { ArrowUpCircle, RefreshCw, Star, Lock, Download as DownloadIcon, Zap } from 'lucide-react'
+import { ArrowUpCircle, RefreshCw, Star, Lock, Download as DownloadIcon, Zap, HelpCircle } from 'lucide-react'
+import { driver } from 'driver.js'
+import 'driver.js/dist/driver.css'
 import ExportProject from './pages/ExportProject'
 import ImportProject from './pages/ImportProject'
 import VipGate from './pages/VipGate'
@@ -29,6 +31,12 @@ function App(): React.JSX.Element {
   const [updateInfo, setUpdateInfo] = useState<any>(null)
 
   useEffect(() => {
+    window.scrollTo(0, 0)
+    if (document.body) document.body.scrollTop = 0
+    if (document.documentElement) document.documentElement.scrollTop = 0
+    const rootEl = document.getElementById('root')
+    if (rootEl) rootEl.scrollTop = 0
+
     window.api.getSettings().then(async (loadedSettings) => {
       const currentSettings = { ...loadedSettings }
       const folderPath = currentSettings.lastCapCutProjectsFolder
@@ -83,6 +91,41 @@ function App(): React.JSX.Element {
     const sizes = ['B', 'KB', 'MB', 'GB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+  }
+
+  const startTutorial = (): void => {
+    if (freeSubTab === 'export') {
+      const driverObj = driver({
+        showProgress: true,
+        nextBtnText: 'Tiếp tục',
+        prevBtnText: 'Quay lại',
+        doneBtnText: 'Hoàn thành',
+        showButtons: ['next', 'previous', 'close'],
+        steps: [
+          { element: '.export-settings-card', popover: { title: '1. Cài đặt thư mục', description: 'Nơi cài đặt thư mục dự án CapCut gốc và thư mục lưu trữ file ZIP kết quả.' } },
+          { element: '.capcut-folder-group .input-wrapper', popover: { title: 'Thư mục dự án CapCut', description: 'App tự động tìm thư mục mặc định của CapCut. Nếu bạn dùng bản portable hoặc cài ở ổ đĩa khác, vui lòng click biểu tượng Kính lúp hoặc Thư mục để chọn lại.' } },
+          { element: '.output-folder-group .input-wrapper', popover: { title: 'Thư mục xuất file ZIP', description: 'Chọn thư mục lưu trữ gói dự án ZIP của bạn sau khi xuất.' } },
+          { element: '.export-preview-card', popover: { title: '2. Danh sách dự án', description: 'Chọn dự án CapCut muốn đóng gói ở danh sách bên phải. Có hỗ trợ tìm kiếm tên và sắp xếp theo ngày/kích thước.' } },
+          { element: '.export-action-card', popover: { title: '3. Thực hiện Export', description: 'Bấm "Export ZIP Package" để đóng gói dự án của bạn kèm đầy đủ các file media liên quan thành một file ZIP duy nhất.' } }
+        ]
+      });
+      driverObj.drive();
+    } else {
+      const driverObj = driver({
+        showProgress: true,
+        nextBtnText: 'Tiếp tục',
+        prevBtnText: 'Quay lại',
+        doneBtnText: 'Hoàn thành',
+        showButtons: ['next', 'previous', 'close'],
+        steps: [
+          { element: '.import-zip-card', popover: { title: '1. Chọn file ZIP', description: 'Bấm "Browse ZIP Package" để chọn file .zip dự án CapCut đã đóng gói từ trước.' } },
+          { element: '.import-folders-card', popover: { title: '2. Chọn thư mục CapCut', description: 'Chọn thư mục chứa các dự án CapCut trên máy này để giải nén dự án vào đó.' } },
+          { element: '.import-experimental-card', popover: { title: '3. Tự động vá đường dẫn (Patch Paths)', description: 'Tích chọn mục này để app tự động sửa lại đường dẫn file media trong dự án cho đúng với máy mới, giúp bạn mở lên dùng ngay không cần relink thủ công.' } },
+          { element: '.import-action-card', popover: { title: '4. Thực hiện Import', description: 'Bấm nút "Import Package" để tiến hành giải nén và nạp dự án vào ứng dụng CapCut của bạn.' } }
+        ]
+      });
+      driverObj.drive();
+    }
   }
 
   const formatSpeed = (bytesPerSec: number): string => {
@@ -158,7 +201,20 @@ function App(): React.JSX.Element {
     )
   }
 
-  if (!settings) return <div className="app-container" style={{ padding: 24 }}>Loading...</div>
+  if (!settings) {
+    return (
+      <div className="scanning-overlay">
+        <div className="scanning-card">
+          <div className="scanning-spinner">
+            <RefreshCw size={40} className="spin" style={{ color: 'var(--accent-purple)' }} />
+          </div>
+          <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-primary)', textAlign: 'center' }}>
+            Đang tải cấu hình...
+          </h2>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="app-container">
@@ -205,19 +261,43 @@ function App(): React.JSX.Element {
         {/* ═══ FREE TAB ═══ */}
         <div style={{ display: activeTab === 'free' ? 'flex' : 'none', height: '100%', flexDirection: 'column' }}>
           {/* Free sub-tabs */}
-          <div className="free-sub-tabs">
-            <button
-              className={`free-sub-tab ${freeSubTab === 'export' ? 'active' : ''}`}
-              onClick={() => setFreeSubTab('export')}
+          <div className="free-sub-tabs" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <button 
+              className="btn-tutorial-help" 
+              onClick={startTutorial}
+              title="Hướng dẫn sử dụng"
+              style={{ 
+                background: 'none', 
+                border: 'none', 
+                color: 'var(--text-secondary)', 
+                cursor: 'pointer', 
+                padding: '10px 12px 10px 4px', 
+                display: 'flex', 
+                alignItems: 'center',
+                height: '100%',
+                transition: 'var(--transition)'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent-purple-hover)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
             >
-              Export Project
+              <HelpCircle size={18} style={{ marginRight: 4 }} />
+              <span style={{ fontSize: 13, fontWeight: 500 }}>Hướng dẫn</span>
             </button>
-            <button
-              className={`free-sub-tab ${freeSubTab === 'import' ? 'active' : ''}`}
-              onClick={() => setFreeSubTab('import')}
-            >
-              Import Project
-            </button>
+
+            <div style={{ display: 'flex' }}>
+              <button
+                className={`free-sub-tab ${freeSubTab === 'export' ? 'active' : ''}`}
+                onClick={() => setFreeSubTab('export')}
+              >
+                Export Project
+              </button>
+              <button
+                className={`free-sub-tab ${freeSubTab === 'import' ? 'active' : ''}`}
+                onClick={() => setFreeSubTab('import')}
+              >
+                Import Project
+              </button>
+            </div>
           </div>
 
           {/* Free sub-tab content */}

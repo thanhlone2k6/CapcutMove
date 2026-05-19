@@ -56,6 +56,7 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
 
   const [outputFolder, setOutputFolder] = useState(settings.lastOutputFolder || '')
   const [projects, setProjects] = useState<any[]>([])
+  const [isScanning, setIsScanning] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [sortMode, setSortMode] = useState(settings.lastSortMode || 'Newest First')
   const [selectedProject, setSelectedProject] = useState<any>(null)
@@ -134,18 +135,30 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
 
   const loadProjects = async (folder: string) => {
     if (!folder) return
-    const list = await window.api.listProjects(folder)
-    setProjects(list)
+    setIsScanning(true)
+    const startTime = Date.now()
+    try {
+      const list = await window.api.listProjects(folder)
+      setProjects(list)
 
-    if (list.length > 0) {
-      console.log('[ExportProject] first project:', list[0])
-      console.log('[ExportProject] coverDataUrl exists:', !!list[0]?.coverDataUrl)
-    }
+      if (list.length > 0) {
+        console.log('[ExportProject] first project:', list[0])
+        console.log('[ExportProject] coverDataUrl exists:', !!list[0]?.coverDataUrl)
+      }
 
-    // auto select last
-    if (settings.lastSelectedProject && !selectedProject) {
-      const found = list.find((p: any) => p.name === settings.lastSelectedProject)
-      if (found) handleSelectProject(found)
+      // auto select last
+      if (settings.lastSelectedProject && !selectedProject) {
+        const found = list.find((p: any) => p.name === settings.lastSelectedProject)
+        if (found) handleSelectProject(found)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      const elapsedTime = Date.now() - startTime
+      const remainingTime = Math.max(0, 1500 - elapsedTime)
+      setTimeout(() => {
+        setIsScanning(false)
+      }, remainingTime)
     }
   }
 
@@ -366,9 +379,9 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
     <div style={{ display: 'flex', gap: 20, height: '100%', padding: '0 4px', paddingBottom: 24 }}>
       {/* LEFT COLUMN: Settings & Export */}
       <div style={{ flex: '4.5', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', paddingRight: 4 }}>
-        <div className="card" style={{ marginBottom: 0 }}>
+        <div className="card export-settings-card" style={{ marginBottom: 0 }}>
           <h2>1. Settings</h2>
-          <div className="input-group">
+          <div className="input-group capcut-folder-group">
             <label className="input-label">CapCut Projects Folder</label>
             <div className="input-wrapper">
               <input
@@ -387,7 +400,7 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
             </div>
           </div>
 
-          <div className="input-group">
+          <div className="input-group output-folder-group">
             <label className="input-label">Output ZIP Folder</label>
             <div className="input-wrapper">
               <input
@@ -404,7 +417,7 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
         </div>
 
         {selectedProject && checkResult && (
-          <div className="card" style={{ marginBottom: 0 }}>
+          <div className="card export-status-card" style={{ marginBottom: 0 }}>
             <h2>2. Status: {selectedProject.name}</h2>
             <div className={`alert ${checkResult.valid ? 'alert-success' : 'alert-error'}`} style={{ marginBottom: scanResult ? 16 : 0 }}>
               {checkResult.valid ? <CheckCircle size={18} /> : <FileWarning size={18} />}
@@ -446,7 +459,7 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
           </div>
         )}
 
-        <div className="card" style={{ marginBottom: 0 }}>
+        <div className="card export-action-card" style={{ marginBottom: 0 }}>
           <h2>3. Export</h2>
 
           {exportError && (
@@ -557,7 +570,7 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
 
       {/* RIGHT COLUMN: Project Preview */}
       <div style={{ flex: '5.5', display: 'flex', flexDirection: 'column', overflowY: 'hidden' }}>
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '100%', marginBottom: 0, padding: 0 }}>
+        <div className="card export-preview-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', marginBottom: 0, padding: 0 }}>
           <div style={{ padding: 20, borderBottom: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <h2 style={{ margin: 0 }}>Project Preview</h2>
@@ -597,8 +610,19 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
           </div>
 
           <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
-            {capcutFolder ? (
-              <div className="project-grid" style={{ marginTop: 0, maxHeight: 'none' }}>
+            {isScanning ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16, padding: '40px 0' }}>
+                <RefreshCw size={36} className="spin" style={{ color: 'var(--accent-purple)' }} />
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-primary)' }}>Đang quét tìm các dự án CapCut...</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>Đang tìm kiếm tại đường dẫn mặc định</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8, maxWidth: 300, lineHeight: 1.4, margin: '8px auto 0' }}>
+                    Nếu đường dẫn của bạn không phải mặc định, vui lòng chọn lại thư mục bên trái nhé.
+                  </div>
+                </div>
+              </div>
+            ) : capcutFolder ? (
+              <div className="project-grid export-project-grid" style={{ marginTop: 0, maxHeight: 'none' }}>
                 {filteredAndSortedProjects.length === 0 ? (
                   <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}>
                     Không tìm thấy project. Hãy kiểm tra lại thư mục hoặc Refresh.

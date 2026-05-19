@@ -196,7 +196,7 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
   return (
     <div style={{ height: '100%', overflowY: 'auto', paddingRight: 8, paddingBottom: 24 }}>
 
-      <div className="card">
+      <div className="card import-zip-card">
         <h2>1. Select ZIP Package</h2>
         <div className="input-group">
           <label className="input-label">Chọn file ZIP đã được export</label>
@@ -217,7 +217,7 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
         </div>
       </div>
 
-      <div className="card">
+      <div className="card import-folders-card">
         <h2>2. Target Folders</h2>
         <div className="input-group">
           <label className="input-label">CapCut Projects Folder trên máy này</label>
@@ -244,7 +244,7 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
         </p>
       </div>
 
-      <div className="card">
+      <div className="card import-experimental-card">
         <h2>3. Experimental Settings</h2>
         <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
           <input
@@ -260,7 +260,7 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
         </label>
       </div>
 
-      <div className="card">
+      <div className="card import-action-card">
         <h2>4. Import</h2>
 
         {importError && (
