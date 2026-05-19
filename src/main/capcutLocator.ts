@@ -3,6 +3,23 @@ import path from 'path'
 import os from 'os'
 
 export async function autoDetectFolder(): Promise<string | null> {
+  if (process.platform === 'darwin') {
+    const possiblePaths = [
+      path.join(os.homedir(), 'Movies', 'CapCut', 'User Data', 'Projects', 'com.lveditor.draft'),
+      path.join(os.homedir(), 'Movies', 'CapCut', 'User Data', 'Projects')
+    ]
+    for (const p of possiblePaths) {
+      try {
+        if (await fs.pathExists(p)) {
+          return p
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    return possiblePaths[0]
+  }
+
   const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local')
   const userProfile = process.env.USERPROFILE || os.homedir()
 

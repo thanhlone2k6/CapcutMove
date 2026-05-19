@@ -42,20 +42,33 @@ export async function processFont(fontNameOrPath: string, sourceFile: string): P
     }
   }
 
-  // Fallback: Check if it exists in Windows Fonts dir
-  const winFontsDir = path.join('C:', 'Windows', 'Fonts')
-  const possibleWinFontPath = path.join(winFontsDir, fontName)
-  try {
-    if (await fs.pathExists(possibleWinFontPath)) {
-      return {
-        fontName,
-        fontPath: possibleWinFontPath,
-        status: 'found',
-        sourceFile
+  // Fallback: Check system Fonts directory
+  let possibleSystemFontPaths: string[] = []
+  if (process.platform === 'win32') {
+    const winFontsDir = path.join('C:', 'Windows', 'Fonts')
+    possibleSystemFontPaths.push(path.join(winFontsDir, fontName))
+  } else if (process.platform === 'darwin') {
+    const os = require('os')
+    possibleSystemFontPaths.push(
+      path.join(os.homedir(), 'Library', 'Fonts', fontName),
+      path.join('/', 'Library', 'Fonts', fontName),
+      path.join('/', 'System', 'Library', 'Fonts', fontName)
+    )
+  }
+
+  for (const possiblePath of possibleSystemFontPaths) {
+    try {
+      if (await fs.pathExists(possiblePath)) {
+        return {
+          fontName,
+          fontPath: possiblePath,
+          status: 'found',
+          sourceFile
+        }
       }
+    } catch (err) {
+      // ignore check errors
     }
-  } catch (err) {
-    // Permission errors checking Windows Fonts
   }
 
   return {

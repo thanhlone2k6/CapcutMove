@@ -149,7 +149,7 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
 
     try {
       const { projectName, exists } = await window.api.checkZipProject(zipPath, capcutFolder)
-      const targetPath = `${capcutFolder}\\${projectName}`
+      const targetPath = `${capcutFolder}${window.api.sep || '/'}${projectName}`
 
       if (exists) {
         setConflictModal({
@@ -168,7 +168,7 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
               startImport(projectName)
             } else if (action === 'rename') {
               const availablePath = await window.api.getAvailableName(targetPath)
-              const newName = availablePath.split('\\').pop() || projectName
+              const newName = availablePath.split(/[\\/]/).pop() || projectName
               startImport(newName)
             }
           }

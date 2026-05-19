@@ -1,7 +1,7 @@
 {
   "name": "capcut-move",
   "productName": "CapCutMove",
-  "version": "9.0.0",
+  "version": "10.0.0",
   "description": "CapCut Project Collector - Move projects easily",
   "main": "./out/main/index.js",
   "author": "example.com",
@@ -17,9 +17,9 @@
     "build": "npm run typecheck && electron-vite build",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
-    "build:win": "npm run build && electron-builder --win",
+    "build:win": "electron-vite build && electron-builder --win",
     "build:mac": "electron-vite build && electron-builder --mac",
-    "build:linux": "electron-vite build && electron-builder --linux",
+    "build:all": "electron-vite build && electron-builder --win --mac",
     "dist": "npm run build && electron-builder"
   },
   "dependencies": {

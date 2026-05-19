@@ -80,6 +80,7 @@ export interface API {
 
   // Clipboard
   readClipboard: () => Promise<string>
+  sep: string
 }
 
 declare global {

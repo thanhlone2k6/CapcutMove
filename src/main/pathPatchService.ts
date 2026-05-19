@@ -151,7 +151,7 @@ export async function patchPaths(params: PatchParams, sendProgress: (info: any) 
   }
 
   // Priority 5: Basename fallback có kiểm soát
-  const pathRegex = /((?:[A-Za-z]:[\\/]|(?:\.\/)?assets_collected[\\/])[^"*,?<>|\n]+?\.(?:mp4|mov|avi|mkv|m4v|webm|mp3|wav|m4a|aac|flac|ogg|png|jpg|jpeg|webp|gif|bmp|heic|tiff|srt|ass|vtt|ttf|otf|ttc|woff|woff2|json|cube|lut|txt))/gi
+  const pathRegex = /((?:[A-Za-z]:[\\/]|\/Users\/|\\\/Users\\\/|\/private\/|\\\/private\\\/|\/Volumes\/|\\\/Volumes\\\/|(?:\.\/)?assets_collected[\\/])[^"*,?<>|\n]+?\.(?:mp4|mov|avi|mkv|m4v|webm|mp3|wav|m4a|aac|flac|ogg|png|jpg|jpeg|webp|gif|bmp|heic|tiff|srt|ass|vtt|ttf|otf|ttc|woff|woff2|json|cube|lut|txt))/gi
 
   const allFoundPaths = new Set<string>()
   for (const content of jsonContents.values()) {
@@ -247,7 +247,8 @@ export async function patchPaths(params: PatchParams, sendProgress: (info: any) 
       const p = match[1]
       const pForward = p.replace(/\\/g, '/')
       const assetsForward = assetsFolder.replace(/\\/g, '/')
-      if (pForward.match(/^[A-Za-z]:\//) && !pForward.startsWith(assetsForward)) {
+      const isAbsolute = pForward.match(/^[A-Za-z]:\//) || pForward.startsWith('/') || pForward.startsWith('\\/')
+      if (isAbsolute && !pForward.startsWith(assetsForward)) {
         unresolvedOldPaths.add(p)
       }
     }

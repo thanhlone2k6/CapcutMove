@@ -82,7 +82,8 @@ const api = {
   },
 
   // Clipboard
-  readClipboard: () => ipcRenderer.invoke('read-clipboard')
+  readClipboard: () => ipcRenderer.invoke('read-clipboard'),
+  sep: process.platform === 'win32' ? '\\' : '/'
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

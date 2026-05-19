@@ -331,7 +331,7 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
         isOpen: true,
         title: 'File export đã tồn tại',
         message: `Trong thư mục đích đã có file ${zipFileName}. Bạn muốn làm gì?`,
-        existingPath: `${outputFolder}\\${zipFileName}`,
+        existingPath: `${outputFolder}${window.api.sep || '/'}${zipFileName}`,
         projectName: selectedProject.name,
         overwriteLabel: 'Ghi đè file cũ',
         renameLabel: 'Tự động đổi tên (thêm số)',
@@ -340,7 +340,7 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
           setConflictModal(prev => ({ ...prev, isOpen: false }))
           if (action === 'overwrite') {
             await window.api.removePath(outputFolder, zipFileName)
-            startExportProcess(`${outputFolder}\\${zipFileName}`)
+            startExportProcess(`${outputFolder}${window.api.sep || '/'}${zipFileName}`)
           } else if (action === 'rename') {
             const newPath = await window.api.getAvailableName(outputFolder, zipFileName)
             startExportProcess(newPath)
@@ -350,7 +350,7 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
       return
     }
 
-    startExportProcess(`${outputFolder}\\${zipFileName}`)
+    startExportProcess(`${outputFolder}${window.api.sep || '/'}${zipFileName}`)
   }
 
   const handleResetExport = () => {
