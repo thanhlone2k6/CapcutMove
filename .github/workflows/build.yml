@@ -39,6 +39,7 @@ jobs:
         with:
           files: |
             release/*.exe
+            release/*.exe.blockmap
             release/latest.yml
           draft: false
           prerelease: false
@@ -63,8 +64,14 @@ jobs:
       - name: Build App
         run: npx electron-vite build
 
-      - name: Package macOS App
-        run: npx electron-builder --mac
+      - name: Package macOS App (x64)
+        run: npx electron-builder --mac --x64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Package macOS App (arm64)
+        run: npx electron-builder --mac --arm64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
@@ -75,6 +82,7 @@ jobs:
         with:
           files: |
             release/*.dmg
+            release/*.dmg.blockmap
             release/latest-mac.yml
           draft: false
           prerelease: false
