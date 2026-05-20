@@ -3,6 +3,7 @@ productName: CapCutMove
 directories:
   buildResources: build
   output: release
+afterPack: scripts/afterPack.js
 files:
   - '!**/.vscode/*'
   - '!src/*'
@@ -23,6 +24,8 @@ nsis:
   createDesktopShortcut: always
 mac:
   icon: build/icon.icns
+  identity: null
+  gatekeeperAssess: false
   target:
     - target: dmg
       arch:
