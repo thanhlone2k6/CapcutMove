@@ -13,6 +13,7 @@ files:
 asarUnpack:
   - resources/**
 win:
+  icon: build/icon.png
   executableName: CapCutMove
   target: nsis
 nsis:
@@ -21,6 +22,7 @@ nsis:
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 mac:
+  icon: build/icon.png
   target:
     - target: dmg
       arch:
