@@ -2,7 +2,11 @@ node_modules
 out
 dist
 release
-build
+build/*
+!build/icon.png
+!build/icon.ico
+!build/icon.icns
+!build/entitlements.mac.plist
 *.exe
 *.zip
 *.rar
