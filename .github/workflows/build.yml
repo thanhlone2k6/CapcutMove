@@ -64,8 +64,8 @@ jobs:
       - name: Build App
         run: npx electron-vite build
 
-      - name: Package macOS App (Universal)
-        run: npx electron-builder --mac --universal
+      - name: Package macOS App (x64 & arm64)
+        run: npx electron-builder --mac --x64 --arm64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
