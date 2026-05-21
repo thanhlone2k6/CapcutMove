@@ -48,10 +48,6 @@ jobs:
 
   build-mac:
     runs-on: macos-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: [x64, arm64]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -68,13 +64,13 @@ jobs:
       - name: Build App
         run: npx electron-vite build
 
-      - name: Package macOS App (${{ matrix.arch }})
-        run: npx electron-builder --mac --${{ matrix.arch }}
+      - name: Package macOS App (Universal)
+        run: npx electron-builder --mac universal
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      - name: Upload macOS Assets (${{ matrix.arch }})
+      - name: Upload macOS Assets
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
