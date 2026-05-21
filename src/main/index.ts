@@ -29,6 +29,12 @@ function createWindow(): void {
     mainWindow.show()
   })
 
+  // macOS: force webContents focus when window is activated so keyboard
+  // events reach the renderer immediately (without requiring a click)
+  mainWindow.on('focus', () => {
+    mainWindow.webContents.focus()
+  })
+
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
@@ -43,7 +49,7 @@ function createWindow(): void {
   }
 
   registerIpcHandlers(mainWindow)
-  
+
   // Initialize auto updater
   setupAutoUpdater(mainWindow)
 
@@ -63,11 +69,11 @@ app.whenReady().then(() => {
       let url = request.url.replace(/^safe-file:\/\/*/, '')
       let filePath = decodeURIComponent(url)
       filePath = filePath.split('?')[0]
-      
+
       if (/^\/[a-zA-Z]:\//.test(filePath)) {
         filePath = filePath.substring(1)
       }
-      
+
       const data = await fs.readFile(filePath)
       return new Response(data)
     } catch (e) {
@@ -97,19 +103,18 @@ app.whenReady().then(() => {
 
 // Handle uncaught exceptions to prevent the error dialog from showing for certain ignorable errors
 process.on('uncaughtException', (error: any) => {
-  const isStreamError = 
-    (error.code === 'ERR_STREAM_DESTROYED') ||
-    (error.message && (
-      error.message.includes('ERR_STREAM_DESTROYED') || 
-      error.message.includes('Cannot call write after a stream was destroyed') ||
-      error.message.includes('stream.push() after EOF')
-    ))
+  const isStreamError =
+    error.code === 'ERR_STREAM_DESTROYED' ||
+    (error.message &&
+      (error.message.includes('ERR_STREAM_DESTROYED') ||
+        error.message.includes('Cannot call write after a stream was destroyed') ||
+        error.message.includes('stream.push() after EOF')))
 
   if (isStreamError) {
     console.warn('Swallowed expected stream error during task cancellation:', error.message)
     return
   }
-  
+
   console.error('Uncaught Exception:', error)
 })
 

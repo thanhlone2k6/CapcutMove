@@ -32,8 +32,10 @@ function formatSpeed(value: any): string {
   return `${(value / 1024 / 1024).toFixed(1)} MB/s`
 }
 
-
-export default function ImportProject({ settings, onSettingsChange }: ImportProjectProps): React.JSX.Element {
+export default function ImportProject({
+  settings,
+  onSettingsChange
+}: ImportProjectProps): React.JSX.Element {
   const [zipPath, setZipPath] = useState('')
   const [capcutFolder, setCapcutFolder] = useState(settings.lastCapCutProjectsFolder || '')
   const [patchPaths, setPatchPaths] = useState(true)
@@ -126,10 +128,10 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
         renameLabel: 'Tiếp tục (Không khuyến nghị)',
         hideRename: false,
         onResolve: async (action: string) => {
-          setConflictModal(prev => ({ ...prev, isOpen: false }))
+          setConflictModal((prev) => ({ ...prev, isOpen: false }))
           if (action === 'overwrite') {
             await window.api.killCapcut()
-            await new Promise(r => setTimeout(r, 1000))
+            await new Promise((r) => setTimeout(r, 1000))
             proceedImport()
           } else if (action === 'rename') {
             proceedImport()
@@ -162,7 +164,7 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
           renameLabel: 'Tự động đổi tên (thêm số)',
           hideRename: false,
           onResolve: async (action: string) => {
-            setConflictModal(prev => ({ ...prev, isOpen: false }))
+            setConflictModal((prev) => ({ ...prev, isOpen: false }))
             if (action === 'overwrite') {
               await window.api.removePath(targetPath)
               startImport(projectName)
@@ -189,13 +191,13 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
   // ============ COMPUTED PROGRESS VALUES ============
   const processedBytes = safeNumber(progress?.processedBytes, 0)
   const totalBytes = safeNumber(progress?.totalBytes, 0)
-  const percent = totalBytes > 0
-    ? Math.min(100, Math.max(0, Math.floor((processedBytes / totalBytes) * 100)))
-    : safeNumber(progress?.percent, 0)
+  const percent =
+    totalBytes > 0
+      ? Math.min(100, Math.max(0, Math.floor((processedBytes / totalBytes) * 100)))
+      : safeNumber(progress?.percent, 0)
 
   return (
     <div style={{ height: '100%', overflowY: 'auto', paddingRight: 8, paddingBottom: 24 }}>
-
       <div className="card import-zip-card">
         <h2>1. Select ZIP Package</h2>
         <div className="input-group">
@@ -206,11 +208,15 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
                 type="text"
                 className="text-input"
                 value={zipPath}
-                onChange={e => setZipPath(e.target.value)}
+                onChange={(e) => setZipPath(e.target.value)}
                 placeholder="Chọn file .zip dự án..."
               />
             </div>
-            <button className="btn btn-primary" onClick={handleBrowseZip} style={{ width: 'fit-content' }}>
+            <button
+              className="btn btn-primary"
+              onClick={handleBrowseZip}
+              style={{ width: 'fit-content' }}
+            >
               <FileArchive size={16} /> Browse ZIP Package
             </button>
           </div>
@@ -227,12 +233,18 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
                 type="text"
                 className="text-input"
                 value={capcutFolder}
-                onChange={e => setCapcutFolder(e.target.value)}
+                onChange={(e) => setCapcutFolder(e.target.value)}
                 placeholder="Chọn thư mục dự án CapCut..."
               />
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn" onClick={handleAutoDetect} title="Tự động tìm đường dẫn mặc định">Auto Detect</button>
+              <button
+                className="btn"
+                onClick={handleAutoDetect}
+                title="Tự động tìm đường dẫn mặc định"
+              >
+                Auto Detect
+              </button>
               <button className="btn" onClick={handleBrowseCapcut}>
                 <Folder size={16} /> Browse Folder
               </button>
@@ -240,7 +252,8 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
           </div>
         </div>
         <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>
-          Tài nguyên media (assets) sẽ tự động được giải nén vào thư mục dự án bên trong CapCut Projects Folder để tiện quản lý.
+          Tài nguyên media (assets) sẽ tự động được giải nén vào thư mục dự án bên trong CapCut
+          Projects Folder để tiện quản lý.
         </p>
       </div>
 
@@ -250,12 +263,17 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
           <input
             type="checkbox"
             checked={patchPaths}
-            onChange={e => setPatchPaths(e.target.checked)}
+            onChange={(e) => setPatchPaths(e.target.checked)}
             style={{ width: 18, height: 18, accentColor: 'var(--accent-purple)' }}
           />
           <div>
-            <strong style={{ display: 'block', fontSize: 14 }}>Patch media paths trong project</strong>
-            <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>App sẽ tự động sửa đường dẫn trong file JSON để trỏ về thư mục assets mới. Rất tiện lợi nhưng có thể không tương thích với một số phiên bản CapCut mới nhất.</span>
+            <strong style={{ display: 'block', fontSize: 14 }}>
+              Patch media paths trong project
+            </strong>
+            <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+              App sẽ tự động sửa đường dẫn trong file JSON để trỏ về thư mục assets mới. Rất tiện
+              lợi nhưng có thể không tương thích với một số phiên bản CapCut mới nhất.
+            </span>
           </div>
         </label>
       </div>
@@ -281,7 +299,18 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
 
         {isImporting && progress && (
           <div className="progress-container" style={{ marginTop: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5, alignItems: 'center' }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginBottom: 8,
+                fontSize: 11,
+                color: 'var(--text-secondary)',
+                textTransform: 'uppercase',
+                letterSpacing: 0.5,
+                alignItems: 'center'
+              }}
+            >
               <span>{progress.message || 'Processing...'}</span>
               <button
                 onClick={handleCancelImport}
@@ -295,8 +324,8 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
                   cursor: 'pointer',
                   transition: 'all 0.2s'
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)')}
               >
                 HỦY
               </button>
@@ -306,11 +335,27 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
               <div className="progress-fill" style={{ width: `${percent}%` }}></div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, alignItems: 'flex-end' }}>
-              <div style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: 'monospace' }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginTop: 12,
+                alignItems: 'flex-end'
+              }}
+            >
+              <div
+                style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: 'monospace' }}
+              >
                 {totalBytes > 0 && (
                   <>
-                    <div style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 600, marginBottom: 2 }}>
+                    <div
+                      style={{
+                        color: 'var(--text-primary)',
+                        fontSize: 15,
+                        fontWeight: 600,
+                        marginBottom: 2
+                      }}
+                    >
                       {formatBytes(processedBytes)} / {formatBytes(totalBytes)}
                     </div>
                     <div style={{ opacity: 0.8 }}>
@@ -332,7 +377,10 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
         )}
 
         {importResult && (
-          <div className="alert alert-success" style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div
+            className="alert alert-success"
+            style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 16 }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <CheckCircle size={20} />
               <strong style={{ fontSize: 16 }}>Import Successful!</strong>
@@ -340,23 +388,50 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
 
             <div style={{ background: 'var(--bg-main)', padding: 16, borderRadius: 8 }}>
               <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>New Project Path</div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                  New Project Path
+                </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <code style={{ flex: 1, wordBreak: 'break-all', fontSize: 13 }}>{importResult.newProjectPath}</code>
-                  <button className="btn btn-icon" onClick={() => window.api.openPath(importResult.newProjectPath)} title="Open Folder">
+                  <code style={{ flex: 1, wordBreak: 'break-all', fontSize: 13 }}>
+                    {importResult.newProjectPath}
+                  </code>
+                  <button
+                    className="btn btn-icon"
+                    onClick={() => window.api.openPath(importResult.newProjectPath)}
+                    title="Open Folder"
+                  >
                     <FolderOpen size={16} />
                   </button>
                 </div>
               </div>
 
               <div>
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Extracted Assets Path</div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                  Extracted Assets Path
+                </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <code style={{ flex: 1, wordBreak: 'break-all', fontSize: 13, color: 'var(--accent-purple-hover)' }}>{importResult.newAssetsPath}</code>
-                  <button className="btn btn-icon" onClick={() => window.api.copyToClipboard(importResult.newAssetsPath)} title="Copy Path">
+                  <code
+                    style={{
+                      flex: 1,
+                      wordBreak: 'break-all',
+                      fontSize: 13,
+                      color: 'var(--accent-purple-hover)'
+                    }}
+                  >
+                    {importResult.newAssetsPath}
+                  </code>
+                  <button
+                    className="btn btn-icon"
+                    onClick={() => window.api.copyToClipboard(importResult.newAssetsPath)}
+                    title="Copy Path"
+                  >
                     <Copy size={16} />
                   </button>
-                  <button className="btn btn-icon" onClick={() => window.api.openPath(importResult.newAssetsPath)} title="Open Folder">
+                  <button
+                    className="btn btn-icon"
+                    onClick={() => window.api.openPath(importResult.newAssetsPath)}
+                    title="Open Folder"
+                  >
                     <FolderOpen size={16} />
                   </button>
                 </div>
@@ -365,50 +440,126 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
 
             {!patchPaths && (
               <div className="alert alert-info" style={{ margin: 0 }}>
-                <strong>Hướng dẫn Relink:</strong> Mở CapCut &gt; Mở project &gt; Media sẽ báo đỏ (Missing) &gt; Chọn các file bị thiếu &gt; Chuột phải &gt; Link to Media &gt; Trỏ về đường dẫn Assets Path bên trên.
+                <strong>Hướng dẫn Relink:</strong> Mở CapCut &gt; Mở project &gt; Media sẽ báo đỏ
+                (Missing) &gt; Chọn các file bị thiếu &gt; Chuột phải &gt; Link to Media &gt; Trỏ về
+                đường dẫn Assets Path bên trên.
               </div>
             )}
 
             {importResult.patchReport && (
-              <div className="alert alert-info" style={{ margin: 0, marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div
+                className="alert alert-info"
+                style={{
+                  margin: 0,
+                  marginTop: 8,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8
+                }}
+              >
                 <h4 style={{ margin: 0, fontSize: 14 }}>Báo cáo Patch Paths</h4>
                 <ul style={{ margin: 0, paddingLeft: 16, fontSize: 13, lineHeight: 1.6 }}>
                   <li>Tổng file media: {importResult.patchReport.totalMappings}</li>
-                  <li>Đã thay thế chính xác (Exact Match): {importResult.patchReport.exactPathReplacements}</li>
-                  <li>Đã thay thế tự động (Basename Match): {importResult.patchReport.basenameFallbackReplacements}</li>
+                  <li>
+                    Đã thay thế chính xác (Exact Match):{' '}
+                    {importResult.patchReport.exactPathReplacements}
+                  </li>
+                  <li>
+                    Đã thay thế tự động (Basename Match):{' '}
+                    {importResult.patchReport.basenameFallbackReplacements}
+                  </li>
                 </ul>
-                
+
                 {importResult.patchReport.missingNewPaths?.length > 0 && (
-                  <div style={{ color: 'var(--danger)', fontSize: 13, background: 'rgba(239, 68, 68, 0.1)', padding: 8, borderRadius: 4 }}>
+                  <div
+                    style={{
+                      color: 'var(--danger)',
+                      fontSize: 13,
+                      background: 'rgba(239, 68, 68, 0.1)',
+                      padding: 8,
+                      borderRadius: 4
+                    }}
+                  >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
-                      <AlertTriangle size={14} /> {importResult.patchReport.missingNewPaths.length} file không tồn tại trên máy này (bỏ qua patch):
+                      <AlertTriangle size={14} /> {importResult.patchReport.missingNewPaths.length}{' '}
+                      file không tồn tại trên máy này (bỏ qua patch):
                     </div>
-                    <ul style={{ margin: '4px 0 0', paddingLeft: 16, maxHeight: 100, overflowY: 'auto' }}>
-                      {importResult.patchReport.missingNewPaths.map((p: string, i: number) => <li key={i}>{p.split(/[\\/]/).pop()}</li>)}
-                    </ul>
-                  </div>
-                )}
-                
-                {importResult.patchReport.unresolvedOldPaths?.length > 0 && (
-                  <div style={{ color: 'var(--danger)', fontSize: 13, background: 'rgba(239, 68, 68, 0.1)', padding: 8, borderRadius: 4 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
-                      <AlertTriangle size={14} /> {importResult.patchReport.unresolvedOldPaths.length} đường dẫn cũ chưa thể xử lý:
-                    </div>
-                    <ul style={{ margin: '4px 0 0', paddingLeft: 16, maxHeight: 100, overflowY: 'auto', wordBreak: 'break-all' }}>
-                      {importResult.patchReport.unresolvedOldPaths.map((p: string, i: number) => <li key={i}>{p}</li>)}
+                    <ul
+                      style={{
+                        margin: '4px 0 0',
+                        paddingLeft: 16,
+                        maxHeight: 100,
+                        overflowY: 'auto'
+                      }}
+                    >
+                      {importResult.patchReport.missingNewPaths.map((p: string, i: number) => (
+                        <li key={i}>{p.split(/[\\/]/).pop()}</li>
+                      ))}
                     </ul>
                   </div>
                 )}
 
-                {importResult.patchReport.unresolvedOldPaths?.length === 0 && importResult.patchReport.missingNewPaths?.length === 0 && (
-                  <div style={{ color: 'var(--success)', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600, fontSize: 13 }}>
-                    <CheckCircle size={14} /> Patch hoàn tất. Không cần relink thủ công.
+                {importResult.patchReport.unresolvedOldPaths?.length > 0 && (
+                  <div
+                    style={{
+                      color: 'var(--danger)',
+                      fontSize: 13,
+                      background: 'rgba(239, 68, 68, 0.1)',
+                      padding: 8,
+                      borderRadius: 4
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
+                      <AlertTriangle size={14} />{' '}
+                      {importResult.patchReport.unresolvedOldPaths.length} đường dẫn cũ chưa thể xử
+                      lý:
+                    </div>
+                    <ul
+                      style={{
+                        margin: '4px 0 0',
+                        paddingLeft: 16,
+                        maxHeight: 100,
+                        overflowY: 'auto',
+                        wordBreak: 'break-all'
+                      }}
+                    >
+                      {importResult.patchReport.unresolvedOldPaths.map((p: string, i: number) => (
+                        <li key={i}>{p}</li>
+                      ))}
+                    </ul>
                   </div>
                 )}
-                
-                {(importResult.patchReport.unresolvedOldPaths?.length > 0 || importResult.patchReport.missingNewPaths?.length > 0) && (
-                  <div style={{ color: 'var(--warning)', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600, fontSize: 13 }}>
-                    <AlertTriangle size={14} /> Patch một phần. Cần relink thủ công các file còn thiếu.
+
+                {importResult.patchReport.unresolvedOldPaths?.length === 0 &&
+                  importResult.patchReport.missingNewPaths?.length === 0 && (
+                    <div
+                      style={{
+                        color: 'var(--success)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        fontWeight: 600,
+                        fontSize: 13
+                      }}
+                    >
+                      <CheckCircle size={14} /> Patch hoàn tất. Không cần relink thủ công.
+                    </div>
+                  )}
+
+                {(importResult.patchReport.unresolvedOldPaths?.length > 0 ||
+                  importResult.patchReport.missingNewPaths?.length > 0) && (
+                  <div
+                    style={{
+                      color: 'var(--warning)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      fontWeight: 600,
+                      fontSize: 13
+                    }}
+                  >
+                    <AlertTriangle size={14} /> Patch một phần. Cần relink thủ công các file còn
+                    thiếu.
                   </div>
                 )}
               </div>
@@ -428,7 +579,7 @@ export default function ImportProject({ settings, onSettingsChange }: ImportProj
         onOverwrite={() => conflictModal.onResolve('overwrite')}
         onAutoRename={() => conflictModal.onResolve('rename')}
         onCancel={() => {
-          setConflictModal(prev => ({ ...prev, isOpen: false }))
+          setConflictModal((prev) => ({ ...prev, isOpen: false }))
           setIsImporting(false)
         }}
       />

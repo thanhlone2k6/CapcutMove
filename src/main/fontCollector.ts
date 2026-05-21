@@ -9,9 +9,12 @@ export interface FontReportItem {
   error?: string
 }
 
-export async function processFont(fontNameOrPath: string, sourceFile: string): Promise<FontReportItem> {
+export async function processFont(
+  fontNameOrPath: string,
+  sourceFile: string
+): Promise<FontReportItem> {
   const isPath = fontNameOrPath.includes('/') || fontNameOrPath.includes('\\')
-  
+
   if (!isPath) {
     return {
       fontName: fontNameOrPath,

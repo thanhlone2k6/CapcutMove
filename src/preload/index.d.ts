@@ -28,12 +28,20 @@ export interface API {
   selectFolder: () => Promise<string | null>
   selectZipFile: () => Promise<string | null>
   selectMissingFile: (extension: string) => Promise<string | null>
+  saveFileDialog: (params: {
+    content: string
+    defaultName: string
+    filters: any[]
+  }) => Promise<{ success: boolean; filePath?: string }>
   listProjects: (folderPath: string) => Promise<ProjectInfo[]>
   checkProject: (projectPath: string) => Promise<any>
   scanAssets: (projectPath: string) => Promise<any>
   deleteProject: (projectPath: string) => Promise<void>
   exportZip: (params: any) => Promise<string>
-  checkZipProject: (zipPath: string, targetCapCutFolder: string) => Promise<{ projectName: string; exists: boolean }>
+  checkZipProject: (
+    zipPath: string,
+    targetCapCutFolder: string
+  ) => Promise<{ projectName: string; exists: boolean }>
   checkProjectExists: (folderPath: string, projectName: string) => Promise<boolean>
   importPackage: (params: any) => Promise<any>
   patchPaths: (params: any) => Promise<any>
@@ -66,7 +74,11 @@ export interface API {
 
   // Video Download APIs
   download: {
-    start: (params: { url: string; outputDir: string; mode: 'video' | 'audio' }) => Promise<{ id: string }>
+    start: (params: {
+      url: string
+      outputDir: string
+      mode: 'video' | 'audio'
+    }) => Promise<{ id: string }>
     cancel: (id: string) => Promise<void>
     openFile: (filePath: string) => Promise<void>
     showInFolder: (filePath: string) => Promise<void>
@@ -80,6 +92,44 @@ export interface API {
 
   // Clipboard
   readClipboard: () => Promise<string>
+
+  // Whisper Transcript APIs
+  whisper: {
+    check: () => Promise<{ ready: boolean; path: string | null }>
+    select: () => Promise<{ success: boolean; path?: string; error?: string }>
+    download: (url?: string) => Promise<{ success: boolean; path?: string; error?: string }>
+    cancelDownload: () => Promise<void>
+    transcribe: (params: {
+      mediaPath: string
+      model?: string
+      language?: string
+    }) => Promise<{
+      success: boolean
+      segments?: { start: number; end: number; text: string }[]
+      error?: string
+    }>
+    cancelTranscribe: () => Promise<void>
+    onDownloadProgress: (
+      callback: (info: {
+        stage: 'downloading' | 'extracting' | 'done' | 'error'
+        percent: number
+        speed?: string
+        message?: string
+      }) => void
+    ) => () => void
+    onTranscribeProgress: (
+      callback: (info: {
+        percent: number
+        speed?: string
+        status: 'initializing' | 'converting_audio' | 'transcribing' | 'done' | 'error'
+      }) => void
+    ) => () => void
+    onTranscribeLog: (callback: (line: string) => void) => () => void
+    onTranscribeSegment: (
+      callback: (segment: { start: number; end: number; text: string }) => void
+    ) => () => void
+  }
+
   sep: string
 }
 

@@ -9,6 +9,7 @@ import * as importService from './importService'
 import * as pathPatchService from './pathPatchService'
 import * as licenseService from './licenseService'
 import * as videoDownloadService from './videoDownloadService'
+import * as transcriptService from './transcriptService'
 import fs from 'fs-extra'
 import path from 'path'
 import { getAvailableName } from './utils'
@@ -39,6 +40,20 @@ export function registerIpcHandlers(mainWindow: Electron.BrowserWindow) {
     })
     return result.canceled ? null : result.filePaths[0]
   })
+
+  ipcMain.handle(
+    'save-file-dialog',
+    async (_, params: { content: string; defaultName: string; filters: any[] }) => {
+      const result = await dialog.showSaveDialog(mainWindow, {
+        defaultPath: params.defaultName,
+        filters: params.filters
+      })
+      if (result.canceled || !result.filePath) return { success: false }
+      const fs = require('fs-extra')
+      await fs.writeFile(result.filePath, params.content, 'utf8')
+      return { success: true, filePath: result.filePath }
+    }
+  )
 
   ipcMain.handle('list-projects', async (_, folderPath: string) => {
     return await projectResolver.listProjects(folderPath)
@@ -163,10 +178,18 @@ export function registerIpcHandlers(mainWindow: Electron.BrowserWindow) {
   })
 
   // ─── Video download handlers ──────────────────────────────
-  ipcMain.handle('download:start', async (_event, params: { url: string; outputDir: string; mode: 'video' | 'audio' }) => {
-    const id = await videoDownloadService.startDownload(mainWindow, params.url, params.outputDir, params.mode)
-    return { id }
-  })
+  ipcMain.handle(
+    'download:start',
+    async (_event, params: { url: string; outputDir: string; mode: 'video' | 'audio' }) => {
+      const id = await videoDownloadService.startDownload(
+        mainWindow,
+        params.url,
+        params.outputDir,
+        params.mode
+      )
+      return { id }
+    }
+  )
 
   ipcMain.handle('download:cancel', (_event, params: { id: string }) => {
     videoDownloadService.cancelDownload(params.id)
@@ -180,7 +203,7 @@ export function registerIpcHandlers(mainWindow: Electron.BrowserWindow) {
     try {
       const fs = require('fs-extra')
       const path = require('path')
-      
+
       if (params.filePath && fs.existsSync(params.filePath)) {
         shell.showItemInFolder(params.filePath)
       } else if (params.filePath) {
@@ -210,5 +233,67 @@ export function registerIpcHandlers(mainWindow: Electron.BrowserWindow) {
 
   ipcMain.handle('read-clipboard', () => {
     return clipboard.readText()
+  })
+
+  // ─── Whisper Transcript Handlers ──────────────────────────
+  ipcMain.handle('whisper:check', async () => {
+    const path = await transcriptService.getSavedOrDetectedWhisperPath()
+    return { ready: !!path, path }
+  })
+
+  ipcMain.handle('whisper:select', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory']
+    })
+    if (result.canceled) return { success: false }
+    const selectedPath = result.filePaths[0]
+    const execPath = transcriptService.getExecPathForFolder(selectedPath)
+    const exists = await fs.pathExists(execPath)
+    if (exists) {
+      const settings = await settingsService.getSettings()
+      await settingsService.saveSettings({
+        vip: {
+          ...settings.vip,
+          whisperPath: selectedPath
+        }
+      })
+      return { success: true, path: selectedPath }
+    } else {
+      const execName =
+        process.platform === 'win32' ? 'faster-whisper-xxl.exe' : 'whisper-cli hoặc main'
+      return { success: false, error: `Thư mục không chứa tệp thực thi hợp lệ (${execName}).` }
+    }
+  })
+
+  ipcMain.handle('whisper:download', async (_, url?: string) => {
+    try {
+      const path = await transcriptService.downloadWhisper(mainWindow, url)
+      return { success: true, path }
+    } catch (err: any) {
+      return { success: false, error: err.message }
+    }
+  })
+
+  ipcMain.handle('whisper:cancel-download', () => {
+    transcriptService.cancelDownloadWhisper()
+  })
+
+  ipcMain.handle(
+    'whisper:transcribe',
+    async (_, params: { mediaPath: string; model?: string; language?: string }) => {
+      try {
+        const result = await transcriptService.startTranscribe(mainWindow, params.mediaPath, {
+          model: params.model,
+          language: params.language
+        })
+        return { success: true, segments: result.segments }
+      } catch (err: any) {
+        return { success: false, error: err.message }
+      }
+    }
+  )
+
+  ipcMain.handle('whisper:cancel-transcribe', () => {
+    transcriptService.cancelTranscribe()
   })
 }

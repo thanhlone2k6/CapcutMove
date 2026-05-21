@@ -9,7 +9,10 @@ export async function isCapCutRunning(): Promise<boolean> {
   try {
     if (process.platform === 'win32') {
       const { stdout } = await execAsync('tasklist')
-      return stdout.toLowerCase().includes('capcut.exe') || stdout.toLowerCase().includes('capcutpro.exe')
+      return (
+        stdout.toLowerCase().includes('capcut.exe') ||
+        stdout.toLowerCase().includes('capcutpro.exe')
+      )
     } else if (process.platform === 'darwin') {
       const { stdout } = await execAsync('pgrep -x CapCut')
       return stdout.trim().length > 0

@@ -11,27 +11,43 @@
     <script>
       if (typeof window !== 'undefined' && !window.api) {
         window.api = {
-          getSettings: () => Promise.resolve({
-            lastCapCutProjectsFolder: 'C:\\Users\\admin\\AppData\\Local\\CapCut\\User Data\\Projects\\com.lveditor.draft',
-            lastOutputFolder: 'C:\\Users\\admin\\Downloads\\output'
-          }),
+          getSettings: () =>
+            Promise.resolve({
+              lastCapCutProjectsFolder:
+                'C:\\Users\\admin\\AppData\\Local\\CapCut\\User Data\\Projects\\com.lveditor.draft',
+              lastOutputFolder: 'C:\\Users\\admin\\Downloads\\output'
+            }),
           saveSettings: () => Promise.resolve(),
-          autoDetectFolder: () => Promise.resolve('C:\\Users\\admin\\AppData\\Local\\CapCut\\User Data\\Projects\\com.lveditor.draft'),
+          autoDetectFolder: () =>
+            Promise.resolve(
+              'C:\\Users\\admin\\AppData\\Local\\CapCut\\User Data\\Projects\\com.lveditor.draft'
+            ),
           checkPathExists: () => Promise.resolve(true),
-          listProjects: () => Promise.resolve([
-            { name: 'desire', fullPath: 'C:\\Users\\admin\\AppData\\Local\\CapCut\\User Data\\Projects\\com.lveditor.draft\\desire', size: 1437.9 * 1024 * 1024, date: '2026-05-19', cover: '', hasCache: false }
-          ]),
-          checkProject: () => Promise.resolve({
-            valid: true,
-            totalFound: 121,
-            totalSize: 1437.9 * 1024 * 1024,
-            missingAssets: []
-          }),
-          scanAssets: () => Promise.resolve({
-            totalFound: 121,
-            totalSize: 1437.9 * 1024 * 1024,
-            missingAssets: []
-          }),
+          listProjects: () =>
+            Promise.resolve([
+              {
+                name: 'desire',
+                fullPath:
+                  'C:\\Users\\admin\\AppData\\Local\\CapCut\\User Data\\Projects\\com.lveditor.draft\\desire',
+                size: 1437.9 * 1024 * 1024,
+                date: '2026-05-19',
+                cover: '',
+                hasCache: false
+              }
+            ]),
+          checkProject: () =>
+            Promise.resolve({
+              valid: true,
+              totalFound: 121,
+              totalSize: 1437.9 * 1024 * 1024,
+              missingAssets: []
+            }),
+          scanAssets: () =>
+            Promise.resolve({
+              totalFound: 121,
+              totalSize: 1437.9 * 1024 * 1024,
+              missingAssets: []
+            }),
           license: {
             check: () => Promise.resolve({ active: false })
           },
@@ -39,12 +55,12 @@
           onProgress: () => () => {},
           copyToClipboard: () => {},
           openExternal: () => {},
-          getAppVersion: () => Promise.resolve('10.5.0'),
+          getAppVersion: () => Promise.resolve('11.0.0'),
           checkCapcutRunning: () => Promise.resolve(false),
           selectFolder: () => Promise.resolve(''),
           checkForUpdates: () => Promise.resolve(),
           sep: '/'
-        };
+        }
       }
     </script>
   </head>

@@ -58,23 +58,30 @@ function getFfmpegDownloadUrl(): string {
 function followRedirects(url: string, destPath: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const protocol = url.startsWith('https') ? https : http
-    protocol.get(url, { headers: { 'User-Agent': 'CapCutMove' } }, (res) => {
-      if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        followRedirects(res.headers.location, destPath).then(resolve).catch(reject)
-        return
-      }
-      if (res.statusCode !== 200) {
-        reject(new Error(`Download failed with status ${res.statusCode}`))
-        return
-      }
-      const fileStream = fs.createWriteStream(destPath)
-      res.pipe(fileStream)
-      fileStream.on('finish', () => {
-        fileStream.close()
-        resolve()
+    protocol
+      .get(url, { headers: { 'User-Agent': 'CapCutMove' } }, (res) => {
+        if (
+          res.statusCode &&
+          res.statusCode >= 300 &&
+          res.statusCode < 400 &&
+          res.headers.location
+        ) {
+          followRedirects(res.headers.location, destPath).then(resolve).catch(reject)
+          return
+        }
+        if (res.statusCode !== 200) {
+          reject(new Error(`Download failed with status ${res.statusCode}`))
+          return
+        }
+        const fileStream = fs.createWriteStream(destPath)
+        res.pipe(fileStream)
+        fileStream.on('finish', () => {
+          fileStream.close()
+          resolve()
+        })
+        fileStream.on('error', reject)
       })
-      fileStream.on('error', reject)
-    }).on('error', reject)
+      .on('error', reject)
   })
 }
 
@@ -97,10 +104,21 @@ export async function ensureFfmpeg(): Promise<string> {
   const { execSync } = require('child_process')
   if (process.platform === 'win32') {
     // PowerShell Expand-Archive is 100% standard on Windows
-    execSync(`powershell -Command "Expand-Archive -Path '${zipPath}' -DestinationPath '${binDir}' -Force"`, { windowsHide: true })
+    execSync(
+      `powershell -Command "Expand-Archive -Path '${zipPath}' -DestinationPath '${binDir}' -Force"`,
+      { windowsHide: true }
+    )
   } else {
     execSync(`unzip -o "${zipPath}" -d "${binDir}"`, { windowsHide: true })
     await fs.chmod(ffmpegPath, 0o755)
+    if (process.platform === 'darwin') {
+      // Remove macOS quarantine so Gatekeeper does not block the binary
+      try {
+        execSync(`xattr -d com.apple.quarantine "${ffmpegPath}"`)
+      } catch {
+        /* no quarantine attr */
+      }
+    }
   }
 
   // Clean up downloaded zip file
@@ -168,13 +186,13 @@ function parseSizeToBytes(sizeStr: string): number {
   const val = parseFloat(match[1])
   const unit = match[2].toLowerCase()
   const multipliers: Record<string, number> = {
-    'b': 1,
-    'kib': 1024,
-    'mib': 1024 * 1024,
-    'gib': 1024 * 1024 * 1024,
-    'kb': 1000,
-    'mb': 1000000,
-    'gb': 1000000000
+    b: 1,
+    kib: 1024,
+    mib: 1024 * 1024,
+    gib: 1024 * 1024 * 1024,
+    kb: 1000,
+    mb: 1000000,
+    gb: 1000000000
   }
   return val * (multipliers[unit] || 1)
 }
@@ -191,19 +209,25 @@ function parseTitle(line: string): string | null {
   return null
 }
 
-function isFfmpegAvailable(): boolean {
-  // 1. Check local binaries folder first
+// Returns { available, localWorks } — tests actual execution, not just file existence.
+// On macOS, a downloaded binary may be quarantined by Gatekeeper and exist on disk
+// but refuse to run, so a simple existsSync check is not sufficient.
+function checkFfmpeg(): { available: boolean; localWorks: boolean } {
+  const { execSync } = require('child_process')
   const localFfmpeg = getFfmpegPath()
   if (fs.existsSync(localFfmpeg)) {
-    return true
+    try {
+      execSync(`"${localFfmpeg}" -version`, { stdio: 'ignore', windowsHide: true })
+      return { available: true, localWorks: true }
+    } catch {
+      // Binary exists but cannot execute (quarantine, wrong arch, permissions, etc.)
+    }
   }
-  // 2. Check system PATH
   try {
-    const { execSync } = require('child_process')
     execSync('ffmpeg -version', { stdio: 'ignore' })
-    return true
+    return { available: true, localWorks: false }
   } catch {
-    return false
+    return { available: false, localWorks: false }
   }
 }
 
@@ -227,9 +251,10 @@ export async function startDownload(
   }
   tasks.set(id, task)
 
-  // Check if ffmpeg is available
-  const ffmpegAvailable = isFfmpegAvailable()
-  console.log(`[videoDownloadService] ffmpeg available: ${ffmpegAvailable}`)
+  const { available: ffmpegAvailable, localWorks: localFfmpegWorks } = checkFfmpeg()
+  console.log(
+    `[videoDownloadService] ffmpeg available: ${ffmpegAvailable}, local: ${localFfmpegWorks}`
+  )
 
   const outputTemplate = path.join(outputDir, '%(title)s_%(epoch)s.%(ext)s')
   const args: string[] = [url]
@@ -239,32 +264,39 @@ export async function startDownload(
     if (ffmpegAvailable) {
       args.push('-x', '--audio-format', 'mp3', '--audio-quality', '0')
     } else {
-      // Fallback: download best direct audio format (usually m4a) when ffmpeg is missing
+      // Fallback: best direct audio format when ffmpeg is missing
       args.push('-f', 'ba[ext=m4a]/ba')
     }
   } else {
     if (ffmpegAvailable) {
-      args.push('-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best', '--merge-output-format', 'mp4')
+      // Let ffmpeg handle remuxing to mp4 from any container — no ext constraint
+      // so we always get best quality regardless of source format
+      args.push('-f', 'bestvideo+bestaudio/best', '--merge-output-format', 'mp4')
     } else {
-      // Fallback: download best pre-merged stream (usually 720p MP4) when ffmpeg is missing
-      args.push('-f', 'best[ext=mp4]/best')
+      // Fallback: best pre-merged stream that has a video track (vcodec!=none prevents
+      // accidentally selecting audio-only streams that happen to have mp4 container)
+      args.push('-f', 'best[vcodec!=none][ext=mp4]/best[vcodec!=none]/best')
     }
   }
 
   // Add output and basic flags
   args.push(
-    '-o', outputTemplate,
+    '-o',
+    outputTemplate,
     '--no-playlist',
     '--progress',
     '--newline',
     '--no-colors',
-    '--encoding', 'utf-8',
-    '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+    '--encoding',
+    'utf-8',
+    '--user-agent',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
   )
 
-  // Pass ffmpeg location to yt-dlp if portable ffmpeg is present locally
-  const localFfmpeg = getFfmpegPath()
-  if (fs.existsSync(localFfmpeg)) {
+  // Only point yt-dlp to the local ffmpeg if it can actually execute.
+  // If the local binary is quarantined (macOS) or wrong arch, skip this so
+  // yt-dlp can fall back to whatever is on the system PATH instead.
+  if (localFfmpegWorks) {
     args.push('--ffmpeg-location', getBinariesDir())
   }
 
@@ -304,7 +336,7 @@ export async function startDownload(
       } else if (url.includes('facebook.com')) {
         fetchArgs.push('--referer', 'https://www.facebook.com/')
       }
-      
+
       const thumbProcess = spawn(ytDlpPath, fetchArgs, {
         windowsHide: true,
         env: {
@@ -402,14 +434,15 @@ export async function startDownload(
       // Try to find the actual output file if we don't have the path
       if (!finalFilePath) {
         try {
-          const files = fs.readdirSync(outputDir)
-            .filter(f => {
+          const files = fs
+            .readdirSync(outputDir)
+            .filter((f) => {
               const ext = path.extname(f).toLowerCase()
               return mode === 'audio'
                 ? ['.mp3', '.m4a', '.webm', '.aac', '.ogg', '.wav'].includes(ext)
                 : ['.mp4', '.mkv', '.webm', '.flv', '.avi'].includes(ext)
             })
-            .map(f => ({
+            .map((f) => ({
               name: f,
               time: fs.statSync(path.join(outputDir, f)).mtime.getTime()
             }))
@@ -451,20 +484,33 @@ export async function startDownload(
       mainWindow.webContents.send('download:done', { ...task })
     } else {
       task.status = 'error'
-      
+
       // Parse clean user-friendly Vietnamese error
       let cleanError = 'Lỗi tải xuống thất bại'
       const lowerStderr = stderrBuffer.toLowerCase()
-      if (lowerStderr.includes('unsupported url') || lowerStderr.includes('generic') || lowerStderr.includes('is not a valid url')) {
+      if (
+        lowerStderr.includes('unsupported url') ||
+        lowerStderr.includes('generic') ||
+        lowerStderr.includes('is not a valid url')
+      ) {
         cleanError = 'Đường dẫn không hỗ trợ hoặc không tìm thấy video'
-      } else if (lowerStderr.includes('unavailable') || lowerStderr.includes('not found') || lowerStderr.includes('404')) {
+      } else if (
+        lowerStderr.includes('unavailable') ||
+        lowerStderr.includes('not found') ||
+        lowerStderr.includes('404')
+      ) {
         cleanError = 'Video không tồn tại, đã bị xóa hoặc để riêng tư'
-      } else if (lowerStderr.includes('sign in') || lowerStderr.includes('login') || lowerStderr.includes('confirm your age')) {
+      } else if (
+        lowerStderr.includes('sign in') ||
+        lowerStderr.includes('login') ||
+        lowerStderr.includes('confirm your age')
+      ) {
         cleanError = 'Video yêu cầu đăng nhập hoặc giới hạn độ tuổi'
       } else if (stderrBuffer.trim()) {
-        const errorLines = stderrBuffer.split('\n')
-          .map(l => l.trim())
-          .filter(l => l.startsWith('ERROR:'))
+        const errorLines = stderrBuffer
+          .split('\n')
+          .map((l) => l.trim())
+          .filter((l) => l.startsWith('ERROR:'))
         if (errorLines.length > 0) {
           cleanError = errorLines[errorLines.length - 1].replace('ERROR:', '').trim()
         } else {

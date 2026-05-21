@@ -1,5 +1,16 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Folder, FolderSearch, RefreshCw, AlertTriangle, CheckCircle, Search, FileWarning, Eye, Film, Trash2 } from 'lucide-react'
+import {
+  Folder,
+  FolderSearch,
+  RefreshCw,
+  AlertTriangle,
+  CheckCircle,
+  Search,
+  FileWarning,
+  Eye,
+  Film,
+  Trash2
+} from 'lucide-react'
 import ConflictModal from '../components/ConflictModal'
 
 interface ExportProjectProps {
@@ -51,7 +62,10 @@ function formatDataDisplay(processed: number, total: number): string {
 
 // ============ COMPONENT ============
 
-export default function ExportProject({ settings, onSettingsChange }: ExportProjectProps): React.JSX.Element {
+export default function ExportProject({
+  settings,
+  onSettingsChange
+}: ExportProjectProps): React.JSX.Element {
   const [capcutFolder, setCapcutFolder] = useState(settings.lastCapCutProjectsFolder || '')
 
   const [outputFolder, setOutputFolder] = useState(settings.lastOutputFolder || '')
@@ -96,7 +110,7 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
       renameLabel: '',
       hideRename: true,
       onResolve: async (action: string) => {
-        setConflictModal(prev => ({ ...prev, isOpen: false }))
+        setConflictModal((prev) => ({ ...prev, isOpen: false }))
         if (action === 'overwrite') {
           try {
             await window.api.deleteProject(p.fullPath)
@@ -115,7 +129,7 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
     if (isExporting) {
       setExportTime(0)
       timer = setInterval(() => {
-        setExportTime(prev => prev + 50)
+        setExportTime((prev) => prev + 50)
       }, 50)
     } else {
       clearInterval(timer)
@@ -131,7 +145,11 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
     return `${m}:${s.toString().padStart(2, '0')}.${milliseconds.toString().padStart(2, '0')}`
   }
 
-  const normalizeString = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+  const normalizeString = (str: string) =>
+    str
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
 
   const loadProjects = async (folder: string) => {
     if (!folder) return
@@ -209,18 +227,25 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
 
     if (searchQuery) {
       const q = normalizeString(searchQuery)
-      result = result.filter(p => normalizeString(p.name).includes(q))
+      result = result.filter((p) => normalizeString(p.name).includes(q))
     }
 
     result.sort((a, b) => {
       switch (sortMode) {
-        case 'Newest First': return b.lastModified - a.lastModified
-        case 'Oldest First': return a.lastModified - b.lastModified
-        case 'Name A-Z': return a.name.localeCompare(b.name)
-        case 'Name Z-A': return b.name.localeCompare(a.name)
-        case 'Largest Size': return b.sizeBytes - a.sizeBytes
-        case 'Smallest Size': return a.sizeBytes - b.sizeBytes
-        default: return 0
+        case 'Newest First':
+          return b.lastModified - a.lastModified
+        case 'Oldest First':
+          return a.lastModified - b.lastModified
+        case 'Name A-Z':
+          return a.name.localeCompare(b.name)
+        case 'Name Z-A':
+          return b.name.localeCompare(a.name)
+        case 'Largest Size':
+          return b.sizeBytes - a.sizeBytes
+        case 'Smallest Size':
+          return a.sizeBytes - b.sizeBytes
+        default:
+          return 0
       }
     })
 
@@ -244,7 +269,6 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
       setManualResolutions({})
     }
   }
-
 
   const startExportProcess = async (finalZipPath: string) => {
     setIsExporting(true)
@@ -302,10 +326,10 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
           renameLabel: 'Tiếp tục (Không khuyến nghị)',
           hideRename: false,
           onResolve: async (action: string) => {
-            setConflictModal(prev => ({ ...prev, isOpen: false }))
+            setConflictModal((prev) => ({ ...prev, isOpen: false }))
             if (action === 'overwrite') {
               await window.api.killCapcut()
-              await new Promise(r => setTimeout(r, 1000))
+              await new Promise((r) => setTimeout(r, 1000))
               proceedExport()
             } else if (action === 'rename') {
               // User chooses to skip closing
@@ -337,7 +361,7 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
         renameLabel: 'Tự động đổi tên (thêm số)',
         hideRename: false,
         onResolve: async (action: string) => {
-          setConflictModal(prev => ({ ...prev, isOpen: false }))
+          setConflictModal((prev) => ({ ...prev, isOpen: false }))
           if (action === 'overwrite') {
             await window.api.removePath(outputFolder, zipFileName)
             startExportProcess(`${outputFolder}${window.api.sep || '/'}${zipFileName}`)
@@ -364,9 +388,8 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
   // ============ COMPUTED PROGRESS VALUES ============
   const processedBytes = safeNumber(progress?.processedBytes, 0)
   const totalBytes = safeNumber(progress?.totalBytes, 0)
-  const percent = totalBytes > 0
-    ? Math.min(100, Math.max(0, Math.floor((processedBytes / totalBytes) * 100)))
-    : 0
+  const percent =
+    totalBytes > 0 ? Math.min(100, Math.max(0, Math.floor((processedBytes / totalBytes) * 100))) : 0
   const speedVal = safeNumber(progress?.speedBytesPerSec, 0)
   const etaVal = progress?.etaSeconds
 
@@ -378,7 +401,16 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
   return (
     <div style={{ display: 'flex', gap: 20, height: '100%', padding: '0 4px', paddingBottom: 24 }}>
       {/* LEFT COLUMN: Settings & Export */}
-      <div style={{ flex: '4.5', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', paddingRight: 4 }}>
+      <div
+        style={{
+          flex: '4.5',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+          overflowY: 'auto',
+          paddingRight: 4
+        }}
+      >
         <div className="card export-settings-card" style={{ marginBottom: 0 }}>
           <h2>1. Settings</h2>
           <div className="input-group capcut-folder-group">
@@ -388,7 +420,7 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
                 type="text"
                 className="text-input"
                 value={capcutFolder}
-                onChange={e => setCapcutFolder(e.target.value)}
+                onChange={(e) => setCapcutFolder(e.target.value)}
                 placeholder="C:\Users\admin\AppData\Local\CapCut\User Data\Projects\com.lveditor.draft"
               />
               <button className="btn btn-icon" onClick={handleAutoDetect} title="Auto Detect">
@@ -407,7 +439,7 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
                 type="text"
                 className="text-input"
                 value={outputFolder}
-                onChange={e => setOutputFolder(e.target.value)}
+                onChange={(e) => setOutputFolder(e.target.value)}
               />
               <button className="btn btn-icon" onClick={handleBrowseOutput} title="Browse">
                 <Folder size={18} />
@@ -419,9 +451,14 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
         {selectedProject && checkResult && (
           <div className="card export-status-card" style={{ marginBottom: 0 }}>
             <h2>2. Status: {selectedProject.name}</h2>
-            <div className={`alert ${checkResult.valid ? 'alert-success' : 'alert-error'}`} style={{ marginBottom: scanResult ? 16 : 0 }}>
+            <div
+              className={`alert ${checkResult.valid ? 'alert-success' : 'alert-error'}`}
+              style={{ marginBottom: scanResult ? 16 : 0 }}
+            >
               {checkResult.valid ? <CheckCircle size={18} /> : <FileWarning size={18} />}
-              <span>{checkResult.valid ? 'Project hợp lệ. (Đã tự động check)' : checkResult.error}</span>
+              <span>
+                {checkResult.valid ? 'Project hợp lệ. (Đã tự động check)' : checkResult.error}
+              </span>
             </div>
 
             {scanResult && (
@@ -429,27 +466,66 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
                 <div className="summary-grid">
                   <div className="summary-card">
                     <span className="label">Total Found</span>
-                    <span className="value" style={{ color: 'var(--success)' }}>{scanResult.totalFound}</span>
+                    <span className="value" style={{ color: 'var(--success)' }}>
+                      {scanResult.totalFound}
+                    </span>
                   </div>
                   <div className="summary-card">
                     <span className="label">Total Size</span>
-                    <span className="value">{(scanResult.totalSize / 1024 / 1024).toFixed(1)} MB</span>
+                    <span className="value">
+                      {(scanResult.totalSize / 1024 / 1024).toFixed(1)} MB
+                    </span>
                   </div>
                 </div>
                 {missingAssets.length > 0 && (
-                  <div className="alert alert-warning" style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6, padding: '12px 14px', background: 'rgba(234, 179, 8, 0.1)', color: 'var(--warning)', border: '1px solid rgba(234, 179, 8, 0.3)' }}>
+                  <div
+                    className="alert alert-warning"
+                    style={{
+                      marginTop: 12,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 6,
+                      padding: '12px 14px',
+                      background: 'rgba(234, 179, 8, 0.1)',
+                      color: 'var(--warning)',
+                      border: '1px solid rgba(234, 179, 8, 0.3)'
+                    }}
+                  >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600 }}>
                       <AlertTriangle size={18} />
-                      <span>{missingAssets.length} file không tìm thấy trên máy này và sẽ bị thiếu khi import sang máy khác:</span>
+                      <span>
+                        {missingAssets.length} file không tìm thấy trên máy này và sẽ bị thiếu khi
+                        import sang máy khác:
+                      </span>
                     </div>
-                    <ul style={{ margin: 0, paddingLeft: 24, fontSize: 13, opacity: 0.9, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <ul
+                      style={{
+                        margin: 0,
+                        paddingLeft: 24,
+                        fontSize: 13,
+                        opacity: 0.9,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 4
+                      }}
+                    >
                       {missingAssets.slice(0, 3).map((a: any, i: number) => (
-                        <li key={i} title={a.originalPath} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <li
+                          key={i}
+                          title={a.originalPath}
+                          style={{
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}
+                        >
                           {a.originalBasename || a.originalPath}
                         </li>
                       ))}
                       {missingAssets.length > 3 && (
-                        <li style={{ fontStyle: 'italic', opacity: 0.8 }}>... và {missingAssets.length - 3} file khác</li>
+                        <li style={{ fontStyle: 'italic', opacity: 0.8 }}>
+                          ... và {missingAssets.length - 3} file khác
+                        </li>
                       )}
                     </ul>
                   </div>
@@ -473,7 +549,15 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
             className="btn btn-primary"
             onClick={handleExport}
             disabled={!scanResult || isExporting || !outputFolder}
-            style={{ width: '100%', padding: 16, fontSize: 16, display: 'flex', flexDirection: 'column', gap: 4, height: isExporting ? 80 : 'auto' }}
+            style={{
+              width: '100%',
+              padding: 16,
+              fontSize: 16,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 4,
+              height: isExporting ? 80 : 'auto'
+            }}
           >
             <span>{isExporting ? 'Exporting...' : 'Export ZIP Package'}</span>
             {!isExporting && missingAssets.length > 0 && (
@@ -482,7 +566,9 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
               </span>
             )}
             {isExporting && (
-              <span style={{ fontSize: 24, fontFamily: 'monospace', fontWeight: 700, opacity: 0.9 }}>
+              <span
+                style={{ fontSize: 24, fontFamily: 'monospace', fontWeight: 700, opacity: 0.9 }}
+              >
                 {formatTime(exportTime)}
               </span>
             )}
@@ -490,28 +576,62 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
 
           {isExporting && progress && (
             <div className="progress-container" style={{ marginTop: 24 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5, alignItems: 'center' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  marginBottom: 8,
+                  fontSize: 11,
+                  color: 'var(--text-secondary)',
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                  alignItems: 'center'
+                }}
+              >
                 <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   {progress.message || 'Processing...'}
                 </span>
-                <span style={{ color: 'var(--accent-purple-hover)', fontWeight: 600 }}>{formatEta(etaVal)}</span>
+                <span style={{ color: 'var(--accent-purple-hover)', fontWeight: 600 }}>
+                  {formatEta(etaVal)}
+                </span>
               </div>
 
               <div className="progress-bar main-progress-thick">
                 <div className="progress-fill" style={{ width: `${percent}%` }}></div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, alignItems: 'flex-end' }}>
-                <div style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: 'monospace' }}>
-                  <div style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 600, marginBottom: 2 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  marginTop: 12,
+                  alignItems: 'flex-end'
+                }}
+              >
+                <div
+                  style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: 'monospace' }}
+                >
+                  <div
+                    style={{
+                      color: 'var(--text-primary)',
+                      fontSize: 15,
+                      fontWeight: 600,
+                      marginBottom: 2
+                    }}
+                  >
                     {formatDataDisplay(processedBytes, totalBytes)}
                   </div>
-                  <div style={{ opacity: 0.8 }}>
-                    Speed: {formatSpeed(speedVal)}
-                  </div>
+                  <div style={{ opacity: 0.8 }}>Speed: {formatSpeed(speedVal)}</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--accent-purple)', lineHeight: 1 }}>
+                  <div
+                    style={{
+                      fontSize: 28,
+                      fontWeight: 800,
+                      color: 'var(--accent-purple)',
+                      lineHeight: 1
+                    }}
+                  >
                     {percent}%
                   </div>
                 </div>
@@ -533,8 +653,14 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
                   transition: 'all 0.2s',
                   letterSpacing: 1
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.25)'; e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.5)' }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.25)'
+                  e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.5)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'
+                  e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)'
+                }}
               >
                 HỦY EXPORT
               </button>
@@ -542,12 +668,18 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
           )}
 
           {exportCompletePath && (
-            <div className="alert alert-success" style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div
+              className="alert alert-success"
+              style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 12 }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <CheckCircle size={20} />
                 <strong style={{ fontSize: 16 }}>Export Successful!</strong>
               </div>
-              <p style={{ wordBreak: 'break-all' }}>Package: <br/><code>{exportCompletePath}</code></p>
+              <p style={{ wordBreak: 'break-all' }}>
+                Package: <br />
+                <code>{exportCompletePath}</code>
+              </p>
               <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
                 <button className="btn" onClick={() => window.api.openPath(outputFolder)}>
                   <Folder size={16} /> Open Folder
@@ -570,27 +702,45 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
 
       {/* RIGHT COLUMN: Project Preview */}
       <div style={{ flex: '5.5', display: 'flex', flexDirection: 'column', overflowY: 'hidden' }}>
-        <div className="card export-preview-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', marginBottom: 0, padding: 0 }}>
+        <div
+          className="card export-preview-card"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            marginBottom: 0,
+            padding: 0
+          }}
+        >
           <div style={{ padding: 20, borderBottom: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <h2 style={{ margin: 0 }}>Project Preview</h2>
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'flex-start' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 6,
+                  alignItems: 'center',
+                  justifyContent: 'flex-start'
+                }}
+              >
                 <div className="input-wrapper" style={{ width: 180 }}>
-                  <span style={{ position: 'absolute', padding: '10px 14px', color: '#71717a' }}><Search size={16} /></span>
+                  <span style={{ position: 'absolute', padding: '10px 14px', color: '#71717a' }}>
+                    <Search size={16} />
+                  </span>
                   <input
                     type="text"
                     className="text-input"
                     style={{ paddingLeft: 36, width: '100%' }}
                     placeholder="Tìm..."
                     value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
                 <select
                   className="text-input"
                   style={{ width: 140, minWidth: 140, maxWidth: 140, fontSize: 13 }}
                   value={sortMode}
-                  onChange={e => {
+                  onChange={(e) => {
                     setSortMode(e.target.value)
                     updateSetting('lastSortMode', e.target.value)
                   }}
@@ -602,7 +752,12 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
                   <option>Largest Size</option>
                   <option>Smallest Size</option>
                 </select>
-                <button className="btn btn-icon" onClick={() => loadProjects(capcutFolder)} title="Refresh List" style={{ padding: 10 }}>
+                <button
+                  className="btn btn-icon"
+                  onClick={() => loadProjects(capcutFolder)}
+                  title="Refresh List"
+                  style={{ padding: 10 }}
+                >
                   <RefreshCw size={16} />
                 </button>
               </div>
@@ -611,62 +766,108 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
 
           <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
             {isScanning ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16, padding: '40px 0' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
+                  gap: 16,
+                  padding: '40px 0'
+                }}
+              >
                 <RefreshCw size={36} className="spin" style={{ color: 'var(--accent-purple)' }} />
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-primary)' }}>Đang quét tìm các dự án CapCut...</div>
-                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>Đang tìm kiếm tại đường dẫn mặc định</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8, maxWidth: 300, lineHeight: 1.4, margin: '8px auto 0' }}>
-                    Nếu đường dẫn của bạn không phải mặc định, vui lòng chọn lại thư mục bên trái nhé.
+                  <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-primary)' }}>
+                    Đang quét tìm các dự án CapCut...
+                  </div>
+                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
+                    Đang tìm kiếm tại đường dẫn mặc định
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: 'var(--text-muted)',
+                      marginTop: 8,
+                      maxWidth: 300,
+                      lineHeight: 1.4,
+                      margin: '8px auto 0'
+                    }}
+                  >
+                    Nếu đường dẫn của bạn không phải mặc định, vui lòng chọn lại thư mục bên trái
+                    nhé.
                   </div>
                 </div>
               </div>
             ) : capcutFolder ? (
-              <div className="project-grid export-project-grid" style={{ marginTop: 0, maxHeight: 'none' }}>
+              <div
+                className="project-grid export-project-grid"
+                style={{ marginTop: 0, maxHeight: 'none' }}
+              >
                 {filteredAndSortedProjects.length === 0 ? (
-                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}>
+                  <div
+                    style={{
+                      gridColumn: '1 / -1',
+                      textAlign: 'center',
+                      padding: 20,
+                      color: 'var(--text-muted)'
+                    }}
+                  >
                     Không tìm thấy project. Hãy kiểm tra lại thư mục hoặc Refresh.
                   </div>
-                ) : filteredAndSortedProjects.map(p => (
-                  <div
-                    key={p.fullPath}
-                    className={`project-card ${selectedProject?.name === p.name ? 'selected' : ''}`}
-                    onClick={() => handleSelectProject(p)}
-                  >
-                    <div className="project-thumb">
-                      {p.coverDataUrl ? (
-                        <img
-                          src={p.coverDataUrl}
-                          alt=""
-                          className="project-cover-img"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                            (e.target as HTMLImageElement).parentElement!.classList.add('fallback-active');
-                          }}
-                        />
-                      ) : null}
-                      <div className="project-cover-fallback">
-                        <Film size={28} />
-                        <span>No cover</span>
+                ) : (
+                  filteredAndSortedProjects.map((p) => (
+                    <div
+                      key={p.fullPath}
+                      className={`project-card ${selectedProject?.name === p.name ? 'selected' : ''}`}
+                      onClick={() => handleSelectProject(p)}
+                    >
+                      <div className="project-thumb">
+                        {p.coverDataUrl ? (
+                          <img
+                            src={p.coverDataUrl}
+                            alt=""
+                            className="project-cover-img"
+                            onError={(e) => {
+                              ;(e.target as HTMLImageElement).style.display = 'none'
+                              ;(e.target as HTMLImageElement).parentElement!.classList.add(
+                                'fallback-active'
+                              )
+                            }}
+                          />
+                        ) : null}
+                        <div className="project-cover-fallback">
+                          <Film size={28} />
+                          <span>No cover</span>
+                        </div>
+                      </div>
+                      <div className="project-name" title={p.name}>
+                        {p.name}
+                      </div>
+                      <div className="project-meta">
+                        <span>{(p.sizeBytes / 1024 / 1024).toFixed(1)} MB</span>
+                        <span>{new Date(p.lastModified).toLocaleDateString()}</span>
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <span className={`badge badge-${p.status.toLowerCase()}`}>{p.status}</span>
+                        <button
+                          className="btn-delete-prj"
+                          onClick={(e) => handleDeleteProject(e, p)}
+                          title="Xóa dự án"
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     </div>
-                    <div className="project-name" title={p.name}>{p.name}</div>
-                    <div className="project-meta">
-                      <span>{(p.sizeBytes / 1024 / 1024).toFixed(1)} MB</span>
-                      <span>{new Date(p.lastModified).toLocaleDateString()}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span className={`badge badge-${p.status.toLowerCase()}`}>{p.status}</span>
-                      <button
-                        className="btn-delete-prj"
-                        onClick={(e) => handleDeleteProject(e, p)}
-                        title="Xóa dự án"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             ) : (
               <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
@@ -687,7 +888,7 @@ export default function ExportProject({ settings, onSettingsChange }: ExportProj
         hideRename={conflictModal.hideRename}
         onOverwrite={() => conflictModal.onResolve('overwrite')}
         onAutoRename={() => conflictModal.onResolve('rename')}
-        onCancel={() => setConflictModal(prev => ({ ...prev, isOpen: false }))}
+        onCancel={() => setConflictModal((prev) => ({ ...prev, isOpen: false }))}
       />
     </div>
   )

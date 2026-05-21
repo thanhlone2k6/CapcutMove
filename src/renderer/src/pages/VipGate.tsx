@@ -97,11 +97,7 @@ export default function VipGate({ onActivated }: VipGateProps): React.JSX.Elemen
             </button>
           </div>
 
-          {error && (
-            <div className="vip-gate-error">
-              {error}
-            </div>
-          )}
+          {error && <div className="vip-gate-error">{error}</div>}
 
           <button
             className="btn btn-primary vip-gate-btn"
@@ -121,18 +117,20 @@ export default function VipGate({ onActivated }: VipGateProps): React.JSX.Elemen
             )}
           </button>
 
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '10px',
-            marginTop: '24px',
-            paddingTop: '20px',
-            borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-            fontSize: '13px',
-            color: 'var(--text-muted)',
-            width: '100%'
-          }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+              marginTop: '24px',
+              paddingTop: '20px',
+              borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+              fontSize: '13px',
+              color: 'var(--text-muted)',
+              width: '100%'
+            }}
+          >
             <span>Yêu cầu mã kích hoạt:</span>
             <button
               onClick={() => window.api.openExternal('https://www.facebook.com/realthanhng/')}
@@ -152,17 +150,21 @@ export default function VipGate({ onActivated }: VipGateProps): React.JSX.Elemen
                 fontFamily: "'Inter', sans-serif"
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(59, 130, 246, 0.2)';
-                e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.3)';
-                e.currentTarget.style.color = '#93c5fd';
+                e.currentTarget.style.background = 'rgba(59, 130, 246, 0.2)'
+                e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.3)'
+                e.currentTarget.style.color = '#93c5fd'
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)';
-                e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.15)';
-                e.currentTarget.style.color = '#60a5fa';
+                e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)'
+                e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.15)'
+                e.currentTarget.style.color = '#60a5fa'
               }}
             >
-              <img src={facebookIcon} alt="Facebook" style={{ width: '13px', height: '13px', objectFit: 'contain' }} />
+              <img
+                src={facebookIcon}
+                alt="Facebook"
+                style={{ width: '13px', height: '13px', objectFit: 'contain' }}
+              />
               <span>Facebook</span>
             </button>
           </div>

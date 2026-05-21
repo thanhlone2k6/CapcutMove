@@ -57,11 +57,11 @@ export async function listProjects(folderPath: string): Promise<ProjectInfo[]> {
     for (const item of items) {
       const fullPath = path.join(folderPath, item)
       const stat = await fs.stat(fullPath)
-      
+
       if (stat.isDirectory()) {
         const hasMeta = await fs.pathExists(path.join(fullPath, 'draft_meta_info.json'))
         const hasContent = await fs.pathExists(path.join(fullPath, 'draft_content.json'))
-        
+
         let status: 'Valid' | 'Partial' | 'Invalid' = 'Invalid'
         if (hasMeta && hasContent) status = 'Valid'
         else if (hasMeta || hasContent) status = 'Partial'
@@ -96,7 +96,7 @@ export async function checkProject(projectPath: string) {
     }
     const hasMeta = await fs.pathExists(path.join(projectPath, 'draft_meta_info.json'))
     const hasContent = await fs.pathExists(path.join(projectPath, 'draft_content.json'))
-    
+
     if (hasMeta && hasContent) {
       return { valid: true, error: null }
     } else {

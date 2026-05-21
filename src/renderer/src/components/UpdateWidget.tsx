@@ -3,7 +3,9 @@ import { RefreshCw, ArrowUpCircle, CheckCircle, XCircle } from 'lucide-react'
 
 export default function UpdateWidget() {
   const [updateInfo, setUpdateInfo] = useState<any>(null)
-  const [status, setStatus] = useState<'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error'>('idle')
+  const [status, setStatus] = useState<
+    'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error'
+  >('idle')
   const [progress, setProgress] = useState<any>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [showResultToast, setShowResultToast] = useState(false)
@@ -47,16 +49,19 @@ export default function UpdateWidget() {
   }
 
   return (
-    <div className="update-widget card" style={{ padding: '12px 16px', marginBottom: 16, border: '1px solid var(--border)' }}>
+    <div
+      className="update-widget card"
+      style={{ padding: '12px 16px', marginBottom: 16, border: '1px solid var(--border)' }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <button 
+          <button
             onClick={handleCheckUpdate}
             disabled={status === 'checking' || status === 'downloading'}
-            style={{ 
-              background: 'rgba(168, 85, 247, 0.1)', 
-              padding: 8, 
-              borderRadius: 8, 
+            style={{
+              background: 'rgba(168, 85, 247, 0.1)',
+              padding: 8,
+              borderRadius: 8,
               color: 'var(--accent-purple)',
               border: 'none',
               cursor: 'pointer',
@@ -70,13 +75,16 @@ export default function UpdateWidget() {
             <RefreshCw size={20} className={status === 'checking' ? 'spin' : ''} />
           </button>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>App Version v{currentVersion || '...'}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+              App Version v{currentVersion || '...'}
+            </div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
               {status === 'idle' && 'Check for latest updates'}
               {status === 'checking' && 'Đang kiểm tra cập nhật...'}
               {status === 'available' && `Có bản mới: v${updateInfo?.version}`}
               {status === 'not-available' && 'Bạn đang dùng bản mới nhất.'}
-              {status === 'downloading' && `Đang tải update: ${Math.floor(progress?.percent || 0)}%`}
+              {status === 'downloading' &&
+                `Đang tải update: ${Math.floor(progress?.percent || 0)}%`}
               {status === 'downloaded' && 'Tải xong, bấm Restart để cập nhật'}
               {status === 'error' && `Lỗi update: ${errorMessage}`}
             </div>
@@ -84,7 +92,11 @@ export default function UpdateWidget() {
         </div>
 
         {status === 'downloaded' && (
-          <button className="btn btn-primary" onClick={handleRestart} style={{ padding: '6px 12px', fontSize: 12 }}>
+          <button
+            className="btn btn-primary"
+            onClick={handleRestart}
+            style={{ padding: '6px 12px', fontSize: 12 }}
+          >
             <RefreshCw size={14} /> Restart to Update
           </button>
         )}
@@ -100,22 +112,30 @@ export default function UpdateWidget() {
 
       {/* Result Popups/Toasts */}
       {showResultToast && (
-        <div className={`update-toast ${resultType}`} style={{
-          position: 'fixed',
-          bottom: 24,
-          right: 24,
-          background: resultType === 'success' ? '#10b981' : resultType === 'error' ? '#ef4444' : 'var(--bg-surface-elevated)',
-          color: resultType === 'info' ? 'var(--text-primary)' : '#fff',
-          padding: '12px 20px',
-          borderRadius: 12,
-          boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          zIndex: 9999,
-          animation: 'toast-in 0.3s ease-out',
-          border: resultType === 'info' ? '1px solid var(--border)' : 'none'
-        }}>
+        <div
+          className={`update-toast ${resultType}`}
+          style={{
+            position: 'fixed',
+            bottom: 24,
+            right: 24,
+            background:
+              resultType === 'success'
+                ? '#10b981'
+                : resultType === 'error'
+                  ? '#ef4444'
+                  : 'var(--bg-surface-elevated)',
+            color: resultType === 'info' ? 'var(--text-primary)' : '#fff',
+            padding: '12px 20px',
+            borderRadius: 12,
+            boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            zIndex: 9999,
+            animation: 'toast-in 0.3s ease-out',
+            border: resultType === 'info' ? '1px solid var(--border)' : 'none'
+          }}
+        >
           {resultType === 'success' && <ArrowUpCircle size={20} />}
           {resultType === 'info' && <CheckCircle size={20} style={{ color: '#10b981' }} />}
           {resultType === 'error' && <XCircle size={20} />}

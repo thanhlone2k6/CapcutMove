@@ -6,13 +6,17 @@ const api = {
   selectFolder: () => ipcRenderer.invoke('select-folder'),
   selectZipFile: () => ipcRenderer.invoke('select-zip-file'),
   selectMissingFile: (extension: string) => ipcRenderer.invoke('select-missing-file', extension),
+  saveFileDialog: (params: { content: string; defaultName: string; filters: any[] }) =>
+    ipcRenderer.invoke('save-file-dialog', params),
   listProjects: (folderPath: string) => ipcRenderer.invoke('list-projects', folderPath),
   checkProject: (projectPath: string) => ipcRenderer.invoke('check-project', projectPath),
   scanAssets: (projectPath: string) => ipcRenderer.invoke('scan-assets', projectPath),
   deleteProject: (projectPath: string) => ipcRenderer.invoke('delete-project', projectPath),
   exportZip: (params: any) => ipcRenderer.invoke('export-zip', params),
-  checkZipProject: (zipPath: string, targetCapCutFolder: string) => ipcRenderer.invoke('check-zip-project', zipPath, targetCapCutFolder),
-  checkProjectExists: (folderPath: string, projectName: string) => ipcRenderer.invoke('check-project-exists', folderPath, projectName),
+  checkZipProject: (zipPath: string, targetCapCutFolder: string) =>
+    ipcRenderer.invoke('check-zip-project', zipPath, targetCapCutFolder),
+  checkProjectExists: (folderPath: string, projectName: string) =>
+    ipcRenderer.invoke('check-project-exists', folderPath, projectName),
   importPackage: (params: any) => ipcRenderer.invoke('import-package', params),
   patchPaths: (params: any) => ipcRenderer.invoke('patch-paths', params),
   openPath: (path: string) => ipcRenderer.invoke('open-path', path),
@@ -24,12 +28,19 @@ const api = {
   openCapcut: () => ipcRenderer.invoke('open-capcut'),
   autoDetectFolder: () => ipcRenderer.invoke('auto-detect-folder'),
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
-  checkPathExists: (folder: string, file: string) => ipcRenderer.invoke('check-path-exists', folder, file),
-  getAvailableName: (folder: string, file?: string) => file ? ipcRenderer.invoke('get-available-name', folder, file) : ipcRenderer.invoke('get-available-name', folder),
-  removePath: (folder: string, file?: string) => file ? ipcRenderer.invoke('remove-path', folder, file) : ipcRenderer.invoke('remove-path', folder),
+  checkPathExists: (folder: string, file: string) =>
+    ipcRenderer.invoke('check-path-exists', folder, file),
+  getAvailableName: (folder: string, file?: string) =>
+    file
+      ? ipcRenderer.invoke('get-available-name', folder, file)
+      : ipcRenderer.invoke('get-available-name', folder),
+  removePath: (folder: string, file?: string) =>
+    file
+      ? ipcRenderer.invoke('remove-path', folder, file)
+      : ipcRenderer.invoke('remove-path', folder),
   cancelExport: () => ipcRenderer.invoke('cancel-export'),
   cancelImport: () => ipcRenderer.invoke('cancel-import'),
-  
+
   // Progress tracking listener
   onProgress: (callback: (progressInfo: any) => void) => {
     const subscription = (_event: any, info: any) => callback(info)
@@ -83,6 +94,46 @@ const api = {
 
   // Clipboard
   readClipboard: () => ipcRenderer.invoke('read-clipboard'),
+
+  // Whisper Transcript APIs
+  whisper: {
+    check: (): Promise<{ ready: boolean; path: string | null }> => ipcRenderer.invoke('whisper:check'),
+    select: (): Promise<{ success: boolean; path?: string; error?: string }> => ipcRenderer.invoke('whisper:select'),
+    download: (url?: string): Promise<{ success: boolean; path?: string; error?: string }> => ipcRenderer.invoke('whisper:download', url),
+    cancelDownload: (): Promise<void> => ipcRenderer.invoke('whisper:cancel-download'),
+    transcribe: (params: { mediaPath: string; model?: string; language?: string }): Promise<{ success: boolean; segments?: any[]; error?: string }> =>
+      ipcRenderer.invoke('whisper:transcribe', params),
+    cancelTranscribe: (): Promise<void> => ipcRenderer.invoke('whisper:cancel-transcribe'),
+    onDownloadProgress: (callback: (info: { stage: 'downloading' | 'extracting' | 'done' | 'error'; percent: number; speed?: string; message?: string }) => void): (() => void) => {
+      const sub = (_event: unknown, info: { stage: 'downloading' | 'extracting' | 'done' | 'error'; percent: number; speed?: string; message?: string }): void => callback(info)
+      ipcRenderer.on('whisper:download-progress', sub)
+      return (): void => {
+        ipcRenderer.removeListener('whisper:download-progress', sub)
+      }
+    },
+    onTranscribeProgress: (callback: (info: { percent: number; speed?: string; status: 'initializing' | 'converting_audio' | 'transcribing' | 'done' | 'error' }) => void): (() => void) => {
+      const sub = (_event: unknown, info: { percent: number; speed?: string; status: 'initializing' | 'converting_audio' | 'transcribing' | 'done' | 'error' }): void => callback(info)
+      ipcRenderer.on('whisper:transcribe-progress', sub)
+      return (): void => {
+        ipcRenderer.removeListener('whisper:transcribe-progress', sub)
+      }
+    },
+    onTranscribeLog: (callback: (line: string) => void): (() => void) => {
+      const sub = (_event: unknown, line: string): void => callback(line)
+      ipcRenderer.on('whisper:transcribe-log', sub)
+      return (): void => {
+        ipcRenderer.removeListener('whisper:transcribe-log', sub)
+      }
+    },
+    onTranscribeSegment: (callback: (segment: { start: number; end: number; text: string }) => void): (() => void) => {
+      const sub = (_event: unknown, segment: { start: number; end: number; text: string }): void => callback(segment)
+      ipcRenderer.on('whisper:transcribe-segment', sub)
+      return (): void => {
+        ipcRenderer.removeListener('whisper:transcribe-segment', sub)
+      }
+    }
+  },
+
   sep: process.platform === 'win32' ? '\\' : '/'
 }
 

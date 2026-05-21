@@ -48,7 +48,10 @@ function makeProgress(p: Partial<ImportProgress>): ImportProgress {
   }
 }
 
-export async function checkZipProject(zipPath: string, targetCapCutFolder: string): Promise<{ projectName: string; exists: boolean }> {
+export async function checkZipProject(
+  zipPath: string,
+  targetCapCutFolder: string
+): Promise<{ projectName: string; exists: boolean }> {
   const directory = await unzipper.Open.file(zipPath)
   const file = directory.files.find((d: any) => d.path === 'manifest.json')
   if (!file) throw new Error('Invalid package: manifest.json not found.')
@@ -62,7 +65,10 @@ export async function checkZipProject(zipPath: string, targetCapCutFolder: strin
   return { projectName: manifest.projectName, exists }
 }
 
-export async function importPackage(params: ImportParams, sendProgress: (info: any) => void): Promise<any> {
+export async function importPackage(
+  params: ImportParams,
+  sendProgress: (info: any) => void
+): Promise<any> {
   const { zipPath, targetCapCutFolder, patchPaths: doPatch, newProjectName } = params
   isCancelled = false
 
@@ -73,10 +79,15 @@ export async function importPackage(params: ImportParams, sendProgress: (info: a
   if (isCancelled) throw new Error('Cancelled')
 
   emit({
-    stage: 'extracting_zip', message: 'Reading ZIP structure...',
-    processedBytes: 0, totalBytes: 0, percent: 0,
-    speedBytesPerSec: 0, etaSeconds: null,
-    processedFiles: 0, totalFiles: 0
+    stage: 'extracting_zip',
+    message: 'Reading ZIP structure...',
+    processedBytes: 0,
+    totalBytes: 0,
+    percent: 0,
+    speedBytesPerSec: 0,
+    etaSeconds: null,
+    processedFiles: 0,
+    totalFiles: 0
   })
 
   // Use Open.file (central directory) instead of streaming Extract.
@@ -113,13 +124,15 @@ export async function importPackage(params: ImportParams, sendProgress: (info: a
 
       const elapsed = (Date.now() - startTime) / 1000
       const speed = elapsed > 0 ? processedBytes / elapsed : 0
-      const eta = speed > 0 && totalBytes > 0 ? Math.max(0, (totalBytes - processedBytes) / speed) : null
+      const eta =
+        speed > 0 && totalBytes > 0 ? Math.max(0, (totalBytes - processedBytes) / speed) : null
       const pct = totalBytes > 0 ? Math.min(99, Math.floor((processedBytes / totalBytes) * 100)) : 0
 
       emit({
         stage: 'extracting_zip',
         message: `Extracting... (${filesDone}/${totalFiles} files)`,
-        processedBytes, totalBytes,
+        processedBytes,
+        totalBytes,
         percent: pct,
         speedBytesPerSec: speed,
         etaSeconds: eta,
@@ -129,10 +142,15 @@ export async function importPackage(params: ImportParams, sendProgress: (info: a
     }
 
     emit({
-      stage: 'importing_project', message: 'Copying project to CapCut folder...',
-      processedBytes: totalBytes, totalBytes, percent: 100,
-      speedBytesPerSec: 0, etaSeconds: 0,
-      processedFiles: totalFiles, totalFiles
+      stage: 'importing_project',
+      message: 'Copying project to CapCut folder...',
+      processedBytes: totalBytes,
+      totalBytes,
+      percent: 100,
+      speedBytesPerSec: 0,
+      etaSeconds: 0,
+      processedFiles: totalFiles,
+      totalFiles
     })
 
     // Read manifest
@@ -149,10 +167,15 @@ export async function importPackage(params: ImportParams, sendProgress: (info: a
     await fs.copy(extractedProjectDir, targetProjectDir)
 
     emit({
-      stage: 'copying_assets', message: 'Moving assets to output folder...',
-      processedBytes: totalBytes, totalBytes, percent: 100,
-      speedBytesPerSec: 0, etaSeconds: 0,
-      processedFiles: totalFiles, totalFiles
+      stage: 'copying_assets',
+      message: 'Moving assets to output folder...',
+      processedBytes: totalBytes,
+      totalBytes,
+      percent: 100,
+      speedBytesPerSec: 0,
+      etaSeconds: 0,
+      processedFiles: totalFiles,
+      totalFiles
     })
 
     const extractedAssetsDir = path.join(tempDir, 'assets_collected')
@@ -164,24 +187,37 @@ export async function importPackage(params: ImportParams, sendProgress: (info: a
     let patchReport: any = null
     if (doPatch) {
       emit({
-        stage: 'patching_paths', message: 'Patching media paths...',
-        processedBytes: totalBytes, totalBytes, percent: 100,
-        speedBytesPerSec: 0, etaSeconds: 0,
-        processedFiles: totalFiles, totalFiles
+        stage: 'patching_paths',
+        message: 'Patching media paths...',
+        processedBytes: totalBytes,
+        totalBytes,
+        percent: 100,
+        speedBytesPerSec: 0,
+        etaSeconds: 0,
+        processedFiles: totalFiles,
+        totalFiles
       })
 
       const pathMapPath = path.join(tempDir, 'path_map.json')
       if (await fs.pathExists(pathMapPath)) {
         const pathMap = await fs.readJson(pathMapPath)
-        patchReport = await patchPaths({ projectPath: targetProjectDir, assetsFolder: finalAssetsDir, pathMap }, sendProgress)
+        patchReport = await patchPaths(
+          { projectPath: targetProjectDir, assetsFolder: finalAssetsDir, pathMap },
+          sendProgress
+        )
       }
     }
 
     emit({
-      stage: 'done', message: 'Import successful.',
-      processedBytes: totalBytes, totalBytes, percent: 100,
-      speedBytesPerSec: 0, etaSeconds: 0,
-      processedFiles: totalFiles, totalFiles
+      stage: 'done',
+      message: 'Import successful.',
+      processedBytes: totalBytes,
+      totalBytes,
+      percent: 100,
+      speedBytesPerSec: 0,
+      etaSeconds: 0,
+      processedFiles: totalFiles,
+      totalFiles
     })
 
     trackImportCompleted(totalFiles, doPatch)

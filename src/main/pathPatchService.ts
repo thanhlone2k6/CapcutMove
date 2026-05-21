@@ -100,20 +100,20 @@ export async function patchPaths(params: PatchParams, sendProgress: (info: any) 
     if (!item.resolvedDiskPaths) {
       item.resolvedDiskPaths = item.absolutePath ? [item.absolutePath] : []
     }
-    
+
     if (!item.normalizedBasename && item.collectedRelativePath) {
-       const ext = path.extname(item.collectedRelativePath)
-       const base = path.basename(item.collectedRelativePath, ext)
-       let origBaseNoExt = base
-       const match = base.match(/(.*)_([a-z0-9]{6})$/)
-       if (match) origBaseNoExt = match[1]
-       item.originalBasename = origBaseNoExt + ext
-       item.normalizedBasename = (origBaseNoExt + ext).toLowerCase()
+      const ext = path.extname(item.collectedRelativePath)
+      const base = path.basename(item.collectedRelativePath, ext)
+      let origBaseNoExt = base
+      const match = base.match(/(.*)_([a-z0-9]{6})$/)
+      if (match) origBaseNoExt = match[1]
+      item.originalBasename = origBaseNoExt + ext
+      item.normalizedBasename = (origBaseNoExt + ext).toLowerCase()
     } else if (!item.normalizedBasename && item.originalPath) {
-       const ext = path.extname(item.originalPath)
-       const base = path.basename(item.originalPath, ext)
-       item.originalBasename = base + ext
-       item.normalizedBasename = (base + ext).toLowerCase()
+      const ext = path.extname(item.originalPath)
+      const base = path.basename(item.originalPath, ext)
+      item.originalBasename = base + ext
+      item.normalizedBasename = (base + ext).toLowerCase()
     }
 
     if (item.normalizedBasename) {
@@ -127,17 +127,20 @@ export async function patchPaths(params: PatchParams, sendProgress: (info: any) 
 
   for (const item of pathMap) {
     if (!item.collectedRelativePath) continue
-    const newAbsPath = path.join(assetsFolder, item.collectedRelativePath.replace('assets_collected/', ''))
-    
+    const newAbsPath = path.join(
+      assetsFolder,
+      item.collectedRelativePath.replace('assets_collected/', '')
+    )
+
     if (!(await fs.pathExists(newAbsPath))) {
       missingNewPaths.add(newAbsPath)
       continue
     }
 
     const newForward = newAbsPath.replace(/\\/g, '/')
-    
+
     // Priority 1 & 2: rawJsonPaths exact match
-    for (const raw of (item.rawJsonPaths || [])) {
+    for (const raw of item.rawJsonPaths || []) {
       for (const v of getPathVariants(raw)) exactReplacements.set(v, newForward)
     }
     // Priority 3: originalPath
@@ -145,13 +148,14 @@ export async function patchPaths(params: PatchParams, sendProgress: (info: any) 
       for (const v of getPathVariants(item.originalPath)) exactReplacements.set(v, newForward)
     }
     // Priority 4: resolvedDiskPaths
-    for (const dp of (item.resolvedDiskPaths || [])) {
+    for (const dp of item.resolvedDiskPaths || []) {
       for (const v of getPathVariants(dp)) exactReplacements.set(v, newForward)
     }
   }
 
   // Priority 5: Basename fallback có kiểm soát
-  const pathRegex = /((?:[A-Za-z]:[\\/]|\/Users\/|\\\/Users\\\/|\/private\/|\\\/private\\\/|\/Volumes\/|\\\/Volumes\\\/|(?:\.\/)?assets_collected[\\/])[^"*,?<>|\n]+?\.(?:mp4|mov|avi|mkv|m4v|webm|mp3|wav|m4a|aac|flac|ogg|png|jpg|jpeg|webp|gif|bmp|heic|tiff|srt|ass|vtt|ttf|otf|ttc|woff|woff2|json|cube|lut|txt))/gi
+  const pathRegex =
+    /((?:[A-Za-z]:[\\/]|\/Users\/|\\\/Users\\\/|\/private\/|\\\/private\\\/|\/Volumes\/|\\\/Volumes\\\/|(?:\.\/)?assets_collected[\\/])[^"*,?<>|\n]+?\.(?:mp4|mov|avi|mkv|m4v|webm|mp3|wav|m4a|aac|flac|ogg|png|jpg|jpeg|webp|gif|bmp|heic|tiff|srt|ass|vtt|ttf|otf|ttc|woff|woff2|json|cube|lut|txt))/gi
 
   const allFoundPaths = new Set<string>()
   for (const content of jsonContents.values()) {
@@ -159,7 +163,8 @@ export async function patchPaths(params: PatchParams, sendProgress: (info: any) 
     while ((match = pathRegex.exec(content)) !== null) {
       allFoundPaths.add(match[1])
     }
-    const escapedRegex = /([A-Za-z]:\\\\(?:[^"*,?<>|\n])+?\.(?:mp4|mov|avi|mkv|m4v|webm|mp3|wav|m4a|aac|flac|ogg|png|jpg|jpeg|webp|gif|bmp|heic|tiff|srt|ass|vtt|ttf|otf|ttc|woff|woff2|json|cube|lut|txt))/gi
+    const escapedRegex =
+      /([A-Za-z]:\\\\(?:[^"*,?<>|\n])+?\.(?:mp4|mov|avi|mkv|m4v|webm|mp3|wav|m4a|aac|flac|ogg|png|jpg|jpeg|webp|gif|bmp|heic|tiff|srt|ass|vtt|ttf|otf|ttc|woff|woff2|json|cube|lut|txt))/gi
     while ((match = escapedRegex.exec(content)) !== null) {
       let unescaped = match[1].replace(/\\\\/g, '\\')
       allFoundPaths.add(unescaped)
@@ -176,23 +181,26 @@ export async function patchPaths(params: PatchParams, sendProgress: (info: any) 
 
     const ext = path.extname(p)
     const baseNameNoExt = path.basename(p, ext)
-    
+
     let originalBasenameNoExt = baseNameNoExt
     const hashMatch = baseNameNoExt.match(/(.*)_([a-z0-9]{6})$/)
     if (hashMatch) originalBasenameNoExt = hashMatch[1]
-    
+
     const normBase = (originalBasenameNoExt + ext).toLowerCase()
     const potentialItems = basenameMap.get(normBase) || []
 
     if (potentialItems.length === 1) {
       const item = potentialItems[0]
       if (!item.collectedRelativePath) continue
-      const newAbsPath = path.join(assetsFolder, item.collectedRelativePath.replace('assets_collected/', ''))
+      const newAbsPath = path.join(
+        assetsFolder,
+        item.collectedRelativePath.replace('assets_collected/', '')
+      )
       if (await fs.pathExists(newAbsPath)) {
-         const newForward = newAbsPath.replace(/\\/g, '/')
-         for (const v of getPathVariants(p)) {
-           fallbackReplacements.set(v, newForward)
-         }
+        const newForward = newAbsPath.replace(/\\/g, '/')
+        for (const v of getPathVariants(p)) {
+          fallbackReplacements.set(v, newForward)
+        }
       }
     }
   }
@@ -247,7 +255,8 @@ export async function patchPaths(params: PatchParams, sendProgress: (info: any) 
       const p = match[1]
       const pForward = p.replace(/\\/g, '/')
       const assetsForward = assetsFolder.replace(/\\/g, '/')
-      const isAbsolute = pForward.match(/^[A-Za-z]:\//) || pForward.startsWith('/') || pForward.startsWith('\\/')
+      const isAbsolute =
+        pForward.match(/^[A-Za-z]:\//) || pForward.startsWith('/') || pForward.startsWith('\\/')
       if (isAbsolute && !pForward.startsWith(assetsForward)) {
         unresolvedOldPaths.add(p)
       }
@@ -267,6 +276,8 @@ export async function patchPaths(params: PatchParams, sendProgress: (info: any) 
   const patchedReportPath = path.join(projectPath, 'patched_files.json')
   await fs.writeJson(patchedReportPath, report, { spaces: 2 })
 
-  console.log(`[pathPatcher] Done. Exact: ${exactReplacementsCount}, Fallback: ${fallbackReplacementsCount}`)
+  console.log(
+    `[pathPatcher] Done. Exact: ${exactReplacementsCount}, Fallback: ${fallbackReplacementsCount}`
+  )
   return report
 }

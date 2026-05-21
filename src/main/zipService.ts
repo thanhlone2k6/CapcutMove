@@ -77,7 +77,9 @@ async function calculateTotalSize(params: ExportParams): Promise<number> {
   }
   for (const font of params.scanResult.fontReport) {
     if (font.status === 'found' && font.fontPath) {
-      try { total += (await fs.stat(font.fontPath)).size } catch (_) {}
+      try {
+        total += (await fs.stat(font.fontPath)).size
+      } catch (_) {}
     }
   }
   return total
@@ -94,14 +96,34 @@ export async function exportZip(
   const startTime = Date.now()
   const emit = (p: Partial<ExportProgress>) => sendProgress(makeProgress(p))
 
-  emit({ stage: 'preparing', message: 'Calculating total size...', processedBytes: 0, totalBytes: 0, percent: 0, speedBytesPerSec: 0, etaSeconds: null, processedFiles: 0, totalFiles: 0 })
+  emit({
+    stage: 'preparing',
+    message: 'Calculating total size...',
+    processedBytes: 0,
+    totalBytes: 0,
+    percent: 0,
+    speedBytesPerSec: 0,
+    etaSeconds: null,
+    processedFiles: 0,
+    totalFiles: 0
+  })
 
   const totalBytes = await calculateTotalSize(params)
   if (totalBytes <= 0) throw new Error('Không có dữ liệu để export.')
 
   let lastProcessed = 0
 
-  emit({ stage: 'creating_zip', message: 'Creating ZIP...', processedBytes: 0, totalBytes, percent: 0, speedBytesPerSec: 0, etaSeconds: null, processedFiles: 0, totalFiles: 0 })
+  emit({
+    stage: 'creating_zip',
+    message: 'Creating ZIP...',
+    processedBytes: 0,
+    totalBytes,
+    percent: 0,
+    speedBytesPerSec: 0,
+    etaSeconds: null,
+    processedFiles: 0,
+    totalFiles: 0
+  })
 
   const output = fs.createWriteStream(zipPath)
   const archive = archiver('zip', { zlib: { level: 9 } })
@@ -113,21 +135,21 @@ export async function exportZip(
       if (rejected) return
       rejected = true
       clearInterval(cancelCheck)
-      
+
       // Stop archiver first
       try {
         archive.unpipe(output)
         archive.removeAllListeners()
-        archive.on('error', () => {}) 
+        archive.on('error', () => {})
         archive.destroy()
       } catch (_) {}
-      
+
       // Then handle output stream
       try {
         output.removeAllListeners()
         output.on('error', () => {})
         output.end()
-        output.destroy() 
+        output.destroy()
       } catch (_) {}
 
       setTimeout(() => fs.remove(zipPath).catch(() => {}), 1000)
@@ -144,7 +166,17 @@ export async function exportZip(
     output.on('close', () => {
       clearInterval(cancelCheck)
       if (!rejected) {
-        emit({ stage: 'done', message: 'Export complete', processedBytes: totalBytes, totalBytes, percent: 100, speedBytesPerSec: 0, etaSeconds: 0, processedFiles: 0, totalFiles: 0 })
+        emit({
+          stage: 'done',
+          message: 'Export complete',
+          processedBytes: totalBytes,
+          totalBytes,
+          percent: 100,
+          speedBytesPerSec: 0,
+          etaSeconds: 0,
+          processedFiles: 0,
+          totalFiles: 0
+        })
         resolve(zipPath)
       }
     })
@@ -152,13 +184,24 @@ export async function exportZip(
     archive.on('error', (err) => {
       clearInterval(cancelCheck)
       if (!rejected) {
-        emit({ stage: 'error', message: err.message, processedBytes: lastProcessed, totalBytes, percent: totalBytes > 0 ? Math.floor((lastProcessed / totalBytes) * 100) : 0, speedBytesPerSec: 0, etaSeconds: null })
+        emit({
+          stage: 'error',
+          message: err.message,
+          processedBytes: lastProcessed,
+          totalBytes,
+          percent: totalBytes > 0 ? Math.floor((lastProcessed / totalBytes) * 100) : 0,
+          speedBytesPerSec: 0,
+          etaSeconds: null
+        })
         reject(err)
       }
     })
 
     archive.on('progress', (data: any) => {
-      if (isCancelled) { doCancel(); return }
+      if (isCancelled) {
+        doCancel()
+        return
+      }
       if (rejected) return
       const pb = safeNum(data?.fs?.processedBytes)
       lastProcessed = pb
@@ -167,7 +210,17 @@ export async function exportZip(
       const eta = speed > 0 && totalBytes > 0 ? Math.max(0, (totalBytes - pb) / speed) : null
       const pct = totalBytes > 0 ? Math.min(99, Math.floor((pb / totalBytes) * 100)) : 0
 
-      emit({ stage: 'creating_zip', message: 'Creating ZIP...', processedBytes: pb, totalBytes, percent: pct, speedBytesPerSec: speed, etaSeconds: eta, processedFiles: safeNum(data?.entries?.processed), totalFiles: safeNum(data?.entries?.total) })
+      emit({
+        stage: 'creating_zip',
+        message: 'Creating ZIP...',
+        processedBytes: pb,
+        totalBytes,
+        percent: pct,
+        speedBytesPerSec: speed,
+        etaSeconds: eta,
+        processedFiles: safeNum(data?.entries?.processed),
+        totalFiles: safeNum(data?.entries?.total)
+      })
     })
 
     archive.pipe(output)
@@ -187,7 +240,10 @@ export async function exportZip(
     for (const asset of scanResult.assets) {
       let src = asset.resolvedDiskPaths[0]
       let isManual = false
-      if (!asset.exists && mr[asset.id]) { src = mr[asset.id]; isManual = true }
+      if (!asset.exists && mr[asset.id]) {
+        src = mr[asset.id]
+        isManual = true
+      }
       const exists = fs.existsSync(src)
       if (exists && asset.collectedRelativePath) {
         archive.file(src, { name: asset.collectedRelativePath })
@@ -227,9 +283,22 @@ export async function exportZip(
       }
     }
 
-    emit({ stage: 'writing_metadata', message: 'Writing metadata and finalizing ZIP...', processedBytes: lastProcessed, totalBytes, percent: totalBytes > 0 ? Math.min(99, Math.floor((lastProcessed / totalBytes) * 100)) : 0, speedBytesPerSec: 0, etaSeconds: null })
+    emit({
+      stage: 'writing_metadata',
+      message: 'Writing metadata and finalizing ZIP...',
+      processedBytes: lastProcessed,
+      totalBytes,
+      percent: totalBytes > 0 ? Math.min(99, Math.floor((lastProcessed / totalBytes) * 100)) : 0,
+      speedBytesPerSec: 0,
+      etaSeconds: null
+    })
 
-    const manifest = { projectName, exportedAt: new Date().toISOString(), totalAssets: foundFiles.length, totalSizeBytes: totalBytes }
+    const manifest = {
+      projectName,
+      exportedAt: new Date().toISOString(),
+      totalAssets: foundFiles.length,
+      totalSizeBytes: totalBytes
+    }
     archive.append(JSON.stringify(manifest, null, 2), { name: 'manifest.json' })
     archive.append(JSON.stringify(pathMap, null, 2), { name: 'path_map.json' })
     archive.append(JSON.stringify(missingFiles, null, 2), { name: 'missing_files.json' })

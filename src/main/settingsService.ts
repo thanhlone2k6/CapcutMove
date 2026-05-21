@@ -12,6 +12,9 @@ export interface AppSettings {
   lastSortMode: string
   lastVideoOutputDir: string
   videoDownloadMode: 'video' | 'audio'
+  vip?: {
+    whisperPath?: string
+  }
 }
 
 const defaultSettings: AppSettings = {

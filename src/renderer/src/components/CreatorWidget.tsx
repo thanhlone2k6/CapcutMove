@@ -29,11 +29,11 @@ const CreatorWidget: React.FC<CreatorWidgetProps> = ({ onDonateClick }) => {
 
   return (
     <div className={`branding-badge ${isCollapsed ? 'collapsed' : ''}`}>
-      <div 
-        className="branding-items-container" 
-        style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
+      <div
+        className="branding-items-container"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
           gap: 8,
           opacity: isCollapsed ? 0 : 1,
           maxHeight: isCollapsed ? 0 : 500,
@@ -47,7 +47,9 @@ const CreatorWidget: React.FC<CreatorWidgetProps> = ({ onDonateClick }) => {
           {facebookIcon ? (
             <img src={facebookIcon} alt="fb" className="creator-icon-img" />
           ) : (
-            <div className="creator-icon-img fallback-icon" style={{ background: '#1877f2' }}>F</div>
+            <div className="creator-icon-img fallback-icon" style={{ background: '#1877f2' }}>
+              F
+            </div>
           )}
           <span>Build by ThanhNguyen</span>
         </div>
@@ -72,23 +74,21 @@ const CreatorWidget: React.FC<CreatorWidgetProps> = ({ onDonateClick }) => {
             </div>
           )}
         </div>
-        
+
         {/* Coffee */}
         <div className="donate-btn" onClick={onDonateClick}>
           <div className="donate-text-wrapper">
             <Coffee size={16} />
             <span>Buy me a coffee</span>
           </div>
-          {donateImage && (
-            <img src={donateImage} alt="coffee" className="donate-banner-img" />
-          )}
+          {donateImage && <img src={donateImage} alt="coffee" className="donate-banner-img" />}
         </div>
       </div>
 
-      <button 
-        className="branding-toggle-btn" 
+      <button
+        className="branding-toggle-btn"
         onClick={() => setIsCollapsed(!isCollapsed)}
-        title={isCollapsed ? "Hiện thông tin" : "Thu gọn"}
+        title={isCollapsed ? 'Hiện thông tin' : 'Thu gọn'}
         style={{ marginTop: isCollapsed ? 0 : 8 }}
       >
         {isCollapsed ? (

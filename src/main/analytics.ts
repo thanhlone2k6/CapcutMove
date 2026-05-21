@@ -13,7 +13,7 @@ async function getAnonymousId(): Promise<string> {
   try {
     const dir = app.getPath('userData')
     const file = path.join(dir, 'analytics_id.json')
-    
+
     if (await fs.pathExists(file)) {
       const data = await fs.readJson(file)
       if (data && data.anonymousId) {
@@ -66,7 +66,10 @@ export async function trackAppOpened(): Promise<void> {
   }
 }
 
-export async function trackImportCompleted(fileCount: number, didPatchPaths: boolean): Promise<void> {
+export async function trackImportCompleted(
+  fileCount: number,
+  didPatchPaths: boolean
+): Promise<void> {
   try {
     const client = getPostHogClient()
     if (!client) return
