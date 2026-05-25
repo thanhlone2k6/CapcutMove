@@ -146,6 +146,8 @@ export interface API {
   quickLinksGet: () => Promise<QuickLinkGroup[]>
   quickLinksSave: (groups: QuickLinkGroup[]) => Promise<void>
   quickLinksOpen: (item: { type: 'folder' | 'link'; path: string }) => Promise<{ success: boolean; error?: string }>
+  quickLinksExportCsv: (csvContent: string) => Promise<{ success: boolean }>
+  quickLinksImportCsv: () => Promise<{ success: boolean; content?: string }>
 
   sep: string
 }

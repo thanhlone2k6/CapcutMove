@@ -325,4 +325,30 @@ export function registerIpcHandlers(mainWindow: Electron.BrowserWindow) {
       }
     }
   )
+
+  ipcMain.handle('quicklinks:export-csv', async (_, csvContent: string) => {
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Xuất Quick Links',
+      defaultPath: path.join(app.getPath('downloads'), 'quick-links.csv'),
+      filters: [{ name: 'CSV Files', extensions: ['csv'] }]
+    })
+    if (!result.canceled && result.filePath) {
+      await fs.writeFile(result.filePath, csvContent, 'utf-8')
+      return { success: true }
+    }
+    return { success: false }
+  })
+
+  ipcMain.handle('quicklinks:import-csv', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Nhập Quick Links từ CSV',
+      filters: [{ name: 'CSV Files', extensions: ['csv'] }],
+      properties: ['openFile']
+    })
+    if (!result.canceled && result.filePaths[0]) {
+      const content = await fs.readFile(result.filePaths[0], 'utf-8')
+      return { success: true, content }
+    }
+    return { success: false }
+  })
 }

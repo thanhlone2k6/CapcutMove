@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Folder,
   Link as LinkIcon,
@@ -15,7 +15,8 @@ import {
   RotateCcw,
   CheckSquare,
   Square,
-  Trash
+  Trash,
+  Settings
 } from 'lucide-react'
 import { QuickLinkItem, QuickLinkGroup } from '../../../../../preload/index.d'
 
@@ -78,6 +79,94 @@ const getCardColor = (id: string) => {
   return CARD_COLORS[index]
 }
 
+const escapeCsvField = (val: string): string => {
+  if (val === undefined || val === null) return ''
+  const needsQuotes = val.includes(',') || val.includes('"') || val.includes('\n') || val.includes('\r')
+  let escaped = val
+  if (val.includes('"')) {
+    escaped = val.replace(/"/g, '""')
+  }
+  return needsQuotes ? `"${escaped}"` : escaped
+}
+
+const exportToCsv = (groups: QuickLinkGroup[]): string => {
+  const header = 'groupId,groupName,itemId,itemType,itemLabel,itemPath'
+  const rows = groups.flatMap(group => {
+    const escapedGroupName = escapeCsvField(group.name)
+    if (group.items.length === 0) {
+      return [`${group.id},${escapedGroupName},,,,`]
+    }
+    return group.items.map(item => {
+      const escapedLabel = escapeCsvField(item.label)
+      const escapedPath = escapeCsvField(item.path)
+      return `${group.id},${escapedGroupName},${item.id},${item.type},${escapedLabel},${escapedPath}`
+    })
+  })
+  return [header, ...rows].join('\n')
+}
+
+const parseCsvLine = (line: string): string[] => {
+  const result: string[] = []
+  let currentField = ''
+  let inQuotes = false
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i]
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        currentField += '"'
+        i++
+      } else {
+        inQuotes = !inQuotes
+      }
+    } else if (char === ',' && !inQuotes) {
+      result.push(currentField)
+      currentField = ''
+    } else {
+      currentField += char
+    }
+  }
+  result.push(currentField)
+  return result
+}
+
+const parseCsv = (content: string): QuickLinkGroup[] => {
+  const lines = content.split(/\r?\n/).filter(line => line.trim().length > 0)
+  if (lines.length <= 1) return []
+  
+  const firstLine = lines[0].toLowerCase()
+  if (!firstLine.includes('groupid') || !firstLine.includes('groupname')) {
+    throw new Error('Định dạng CSV không hợp lệ (thiếu cột groupId hoặc groupName).')
+  }
+
+  const dataLines = lines.slice(1)
+  const groupMap = new Map<string, QuickLinkGroup>()
+
+  for (const line of dataLines) {
+    const fields = parseCsvLine(line)
+    if (fields.length < 2) continue
+    const [groupId, groupName, itemId, itemType, itemLabel, itemPath] = fields
+
+    if (!groupId || !groupName) continue
+
+    if (!groupMap.has(groupId)) {
+      groupMap.set(groupId, { id: groupId, name: groupName, items: [] })
+    }
+    
+    if (itemId) {
+      const type = itemType as 'folder' | 'link' | 'text'
+      if (type === 'folder' || type === 'link' || type === 'text') {
+        groupMap.get(groupId)!.items.push({
+          id: itemId,
+          type,
+          label: itemLabel || itemPath || '',
+          path: itemPath || ''
+        })
+      }
+    }
+  }
+  return Array.from(groupMap.values())
+}
+
 export default function QuickLinks(): React.JSX.Element {
   const [groups, setGroups] = useState<QuickLinkGroup[]>([])
   const [activeGroup, setActiveGroup] = useState<QuickLinkGroup | null>(null)
@@ -123,6 +212,15 @@ export default function QuickLinks(): React.JSX.Element {
     onConfirm: () => void
   } | null>(null)
 
+  // Settings Menu state
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false)
+  const settingsMenuRef = useRef<HTMLDivElement>(null)
+
+  // CSV Import state
+  const [importMergeDialog, setImportMergeDialog] = useState<{
+    groups: QuickLinkGroup[]
+  } | null>(null)
+
   // Load quick links on mount
   useEffect(() => {
     window.api.quickLinksGet()
@@ -153,12 +251,15 @@ export default function QuickLinks(): React.JSX.Element {
         console.error('Failed to load deleted groups:', err)
       })
 
-    // Listen for click to close context menu and quick add panel
+    // Listen for click to close context menu, quick add panel and settings dropdown
     const handleClickOutside = (e: MouseEvent) => {
       setContextMenu(null)
       const target = e.target as HTMLElement
       if (!target.closest('.quick-add-panel') && !target.closest('.quick-input-wrapper')) {
         setShowQuickAddPanel(false)
+      }
+      if (settingsMenuRef.current && !settingsMenuRef.current.contains(target) && !target.closest('.ql-settings-btn')) {
+        setShowSettingsMenu(false)
       }
     }
     window.addEventListener('click', handleClickOutside)
@@ -721,6 +822,87 @@ export default function QuickLinks(): React.JSX.Element {
     }
   }
 
+  const handleExportCsv = async () => {
+    setShowSettingsMenu(false)
+    setErrorMsg(null)
+    setSuccessMsg(null)
+
+    if (groups.length === 0) {
+      setErrorMsg('Không có dữ liệu Quick Links để xuất.')
+      setTimeout(() => setErrorMsg(null), 3000)
+      return
+    }
+
+    try {
+      const csvContent = exportToCsv(groups)
+      const res = await window.api.quickLinksExportCsv(csvContent)
+      if (res.success) {
+        setSuccessMsg('Xuất CSV thành công!')
+        setTimeout(() => setSuccessMsg(null), 3000)
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Lỗi khi xuất file CSV.')
+      setTimeout(() => setErrorMsg(null), 4000)
+    }
+  }
+
+  const handleImportCsv = async () => {
+    setShowSettingsMenu(false)
+    setErrorMsg(null)
+    setSuccessMsg(null)
+
+    try {
+      const res = await window.api.quickLinksImportCsv()
+      if (!res.success || !res.content) {
+        return
+      }
+
+      const importedGroups = parseCsv(res.content)
+      if (importedGroups.length === 0) {
+        setErrorMsg('Không tìm thấy dữ liệu hợp lệ trong file CSV.')
+        setTimeout(() => setErrorMsg(null), 4000)
+        return
+      }
+
+      setImportMergeDialog({ groups: importedGroups })
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Lỗi khi nhập file CSV.')
+      setTimeout(() => setErrorMsg(null), 4000)
+    }
+  }
+
+  const handleExecuteImport = async (importedGroups: QuickLinkGroup[], mode: 'overwrite' | 'merge') => {
+    setImportMergeDialog(null)
+    setErrorMsg(null)
+    setSuccessMsg(null)
+
+    let finalGroups: QuickLinkGroup[] = []
+
+    if (mode === 'overwrite') {
+      finalGroups = [...importedGroups]
+    } else {
+      const currentIds = new Set(groups.map(g => g.id))
+      const newGroups = importedGroups.filter(g => !currentIds.has(g.id))
+      finalGroups = [...groups, ...newGroups]
+    }
+
+    let warningMsg = ''
+    if (finalGroups.length > 10) {
+      finalGroups = finalGroups.slice(0, 10)
+      warningMsg = ' Chỉ giữ lại 10 nhóm đầu tiên do giới hạn tối đa.'
+    }
+
+    try {
+      await window.api.quickLinksSave(finalGroups)
+      setGroups(finalGroups)
+      setSuccessMsg(`Nhập CSV thành công!${warningMsg}`)
+      setTimeout(() => setSuccessMsg(null), 4000)
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Không thể lưu dữ liệu nhập.')
+      setTimeout(() => setErrorMsg(null), 4000)
+    }
+  }
+
   return (
     <div
       style={{
@@ -742,7 +924,106 @@ export default function QuickLinks(): React.JSX.Element {
             Tổ chức thư mục làm việc và liên kết trang web theo từng nhóm dự án dễ dàng.
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}>
+          {/* Settings Button */}
+          <button
+            className="ql-settings-btn"
+            onClick={(e) => {
+              e.stopPropagation()
+              setShowSettingsMenu(!showSettingsMenu)
+            }}
+            style={{
+              background: 'none',
+              border: '1px solid var(--border)',
+              color: 'var(--text-secondary)',
+              cursor: 'pointer',
+              padding: '8px',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'var(--transition)',
+              width: '40px',
+              height: '40px'
+            }}
+            title="Cài đặt"
+          >
+            <Settings size={16} />
+          </button>
+
+          {/* Settings Dropdown Menu */}
+          {showSettingsMenu && (
+            <div
+              ref={settingsMenuRef}
+              style={{
+                position: 'absolute',
+                top: '46px',
+                right: '48px',
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border)',
+                borderRadius: '10px',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
+                zIndex: 1000,
+                width: '160px',
+                padding: '6px 0',
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+            >
+              <div
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  color: 'var(--text-muted)',
+                  padding: '6px 12px',
+                  borderBottom: '1px solid var(--border)'
+                }}
+              >
+                ⚙️ Cài đặt CSV
+              </div>
+              <button
+                onClick={handleExportCsv}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-primary)',
+                  padding: '8px 12px',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  width: '100%',
+                  transition: 'all 0.2s ease'
+                }}
+                className="context-menu-item"
+              >
+                <span>📤</span> Xuất CSV
+              </button>
+              <button
+                onClick={handleImportCsv}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-primary)',
+                  padding: '8px 12px',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  width: '100%',
+                  transition: 'all 0.2s ease'
+                }}
+                className="context-menu-item"
+              >
+                <span>📥</span> Nhập CSV
+              </button>
+            </div>
+          )}
+
           {/* Recycle Bin Button */}
           <button
             onClick={() => setShowBinModal(true)}
@@ -1860,6 +2141,106 @@ export default function QuickLinks(): React.JSX.Element {
                 }}
               >
                 {confirmDialog.confirmText || 'Đồng ý'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Import Merge Dialog Modal Popup overlay */}
+      {importMergeDialog && (
+        <div
+          className="ql-modal-overlay"
+          style={{ zIndex: 100000 }}
+          onClick={() => setImportMergeDialog(null)}
+        >
+          <div
+            className="ql-modal"
+            style={{
+              width: '380px',
+              padding: '24px',
+              gap: '20px',
+              alignItems: 'center',
+              textAlign: 'center',
+              boxSizing: 'border-box',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+              <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                Nhập danh sách Quick Links
+              </span>
+              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                Bạn muốn xử lý dữ liệu nhập từ CSV như thế nào?
+              </span>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+              <button
+                className="btn"
+                onClick={() => handleExecuteImport(importMergeDialog.groups, 'overwrite')}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  borderRadius: '10px',
+                  background: 'rgba(139, 92, 246, 0.1)',
+                  border: '1px solid rgba(139, 92, 246, 0.2)',
+                  color: 'var(--accent-purple)',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(139, 92, 246, 0.18)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(139, 92, 246, 0.1)'
+                }}
+              >
+                Ghi đè toàn bộ danh sách hiện có
+              </button>
+              <button
+                className="btn"
+                onClick={() => handleExecuteImport(importMergeDialog.groups, 'merge')}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  borderRadius: '10px',
+                  background: 'rgba(16, 185, 129, 0.1)',
+                  border: '1px solid rgba(16, 185, 129, 0.2)',
+                  color: '#34d399',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(16, 185, 129, 0.18)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)'
+                }}
+              >
+                Gộp vào danh sách hiện có (Merge)
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => setImportMergeDialog(null)}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  borderRadius: '10px',
+                  fontSize: '13px',
+                  border: '1px solid var(--border)',
+                  background: 'none',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer'
+                }}
+              >
+                Hủy bỏ
               </button>
             </div>
           </div>

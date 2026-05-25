@@ -139,6 +139,8 @@ const api = {
   quickLinksSave: (groups: QuickLinkGroup[]) => ipcRenderer.invoke('quicklinks:save', groups),
   quickLinksOpen: (item: { type: 'folder' | 'link'; path: string }) =>
     ipcRenderer.invoke('quicklinks:open', item),
+  quickLinksExportCsv: (csvContent: string) => ipcRenderer.invoke('quicklinks:export-csv', csvContent),
+  quickLinksImportCsv: () => ipcRenderer.invoke('quicklinks:import-csv'),
 
   sep: process.platform === 'win32' ? '\\' : '/'
 }
