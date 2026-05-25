@@ -2812,3 +2812,27 @@ h3 {
   from { transform: translateY(24px) scale(0.96); opacity: 0; }
   to   { transform: translateY(0) scale(1); opacity: 1; }
 }
+
+.ql-bin-btn:hover {
+  border-color: var(--accent-purple) !important;
+  color: var(--accent-purple) !important;
+  background: var(--bg-surface-hover) !important;
+}
+
+.quicklink-restore-btn:hover {
+  background: var(--accent-purple-light) !important;
+  border-color: var(--accent-purple) !important;
+}
+
+.empty-bin-btn:hover {
+  background: rgba(239, 68, 68, 0.15) !important;
+}
+
+.context-menu-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.context-menu-item.danger:hover {
+  background: rgba(239, 68, 68, 0.1) !important;
+}
+
