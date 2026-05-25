@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
+import type { QuickLinkGroup } from '../main/settingsService'
 
 // Custom APIs for renderer
 const api = {
@@ -133,6 +134,11 @@ const api = {
       }
     }
   },
+
+  quickLinksGet: () => ipcRenderer.invoke('quicklinks:get'),
+  quickLinksSave: (groups: QuickLinkGroup[]) => ipcRenderer.invoke('quicklinks:save', groups),
+  quickLinksOpen: (item: { type: 'folder' | 'link'; path: string }) =>
+    ipcRenderer.invoke('quicklinks:open', item),
 
   sep: process.platform === 'win32' ? '\\' : '/'
 }

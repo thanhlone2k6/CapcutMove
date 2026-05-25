@@ -2711,3 +2711,104 @@ h3 {
   border-radius: 10px;
 }
 
+/* Quick Links styles */
+.quicklink-card:hover {
+  border-color: var(--accent-purple) !important;
+  background: var(--bg-surface-hover) !important;
+}
+
+.quicklink-card .quicklink-delete-btn {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.quicklink-card:hover .quicklink-delete-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.quicklink-delete-btn:hover {
+  color: var(--danger) !important;
+  background: rgba(239, 68, 68, 0.1) !important;
+}
+
+.quicklink-item-row:hover {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: var(--accent-purple-light) !important;
+}
+
+.quicklink-item-row .quicklink-delete-item-btn {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.quicklink-item-row:hover .quicklink-delete-item-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.quicklink-open-item-btn:hover {
+  background: var(--accent-purple-light) !important;
+}
+
+.quicklink-delete-item-btn:hover {
+  color: var(--danger) !important;
+  background: rgba(239, 68, 68, 0.1) !important;
+}
+
+/* Custom Scrollbar and styling for QuickLinks scroll container */
+.quicklinks-scroll-container::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.quicklinks-scroll-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.01);
+  border-radius: 10px;
+}
+
+.quicklinks-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+
+.quicklinks-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.ql-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ql-modal {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  width: 480px;
+  max-width: 90vw;
+  max-height: 75vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(24px) scale(0.96); opacity: 0; }
+  to   { transform: translateY(0) scale(1); opacity: 1; }
+}

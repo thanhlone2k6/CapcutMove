@@ -296,4 +296,33 @@ export function registerIpcHandlers(mainWindow: Electron.BrowserWindow) {
   ipcMain.handle('whisper:cancel-transcribe', () => {
     transcriptService.cancelTranscribe()
   })
+
+  // ─── Quick Links Handlers ────────────────────────────────
+  ipcMain.handle('quicklinks:get', async () => {
+    return await settingsService.getQuickLinks()
+  })
+
+  ipcMain.handle('quicklinks:save', async (_, links: any[]) => {
+    await settingsService.saveQuickLinks(links)
+  })
+
+  ipcMain.handle(
+    'quicklinks:open',
+    async (_, item: { type: 'folder' | 'link'; path: string }) => {
+      if (item.type === 'folder') {
+        const err = await shell.openPath(item.path)
+        if (err) {
+          return { success: false, error: err }
+        }
+        return { success: true }
+      } else {
+        try {
+          await shell.openExternal(item.path)
+          return { success: true }
+        } catch (err: any) {
+          return { success: false, error: err.message }
+        }
+      }
+    }
+  )
 }

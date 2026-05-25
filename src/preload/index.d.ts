@@ -24,6 +24,19 @@ export interface DownloadTask {
   mode: 'video' | 'audio'
 }
 
+export interface QuickLinkItem {
+  id: string
+  type: 'folder' | 'link' | 'text'
+  label: string
+  path: string
+}
+
+export interface QuickLinkGroup {
+  id: string
+  name: string
+  items: QuickLinkItem[]
+}
+
 export interface API {
   selectFolder: () => Promise<string | null>
   selectZipFile: () => Promise<string | null>
@@ -129,6 +142,10 @@ export interface API {
       callback: (segment: { start: number; end: number; text: string }) => void
     ) => () => void
   }
+
+  quickLinksGet: () => Promise<QuickLinkGroup[]>
+  quickLinksSave: (groups: QuickLinkGroup[]) => Promise<void>
+  quickLinksOpen: (item: { type: 'folder' | 'link'; path: string }) => Promise<{ success: boolean; error?: string }>
 
   sep: string
 }
