@@ -32,7 +32,7 @@ function createTray(win: BrowserWindow) {
     },
     { type: 'separator' },
     {
-      label: 'Thoát',
+      label: 'Thoát hoàn toàn',
       click: () => {
         isQuitting = true
         app.quit()

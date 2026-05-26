@@ -22,6 +22,8 @@ export function setupAutoUpdater(mainWindow: BrowserWindow) {
 
   autoUpdater.on('update-downloaded', (info) => {
     sendStatusToWindow('downloaded', info)
+    // Automatically quit and install the update once downloaded
+    autoUpdater.quitAndInstall()
   })
 
   autoUpdater.on('error', (err) => {
