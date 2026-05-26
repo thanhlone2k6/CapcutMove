@@ -1,7 +1,13 @@
 import { app, shell, BrowserWindow, ipcMain, protocol, Tray, Menu, nativeImage, globalShortcut, screen } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import icon from '../../resources/icon.png?asset'
+// Define platform-specific icon paths
+const isWin = process.platform === 'win32'
+const appIconPath = join(__dirname, '../../resources/icon.ico')
+const trayIconPath = isWin
+  ? join(__dirname, '../../resources/icon.ico')
+  : join(__dirname, '../../resources/icon.png')
+
 import { registerIpcHandlers } from './ipcHandlers'
 import { setupAutoUpdater } from './updateService'
 import { trackAppOpened, shutdownAnalytics } from './analytics'
@@ -14,7 +20,7 @@ let tray: Tray | null = null
 let isQuitting = false
 
 function createTray(win: BrowserWindow) {
-  tray = new Tray(nativeImage.createFromPath(icon))
+  tray = new Tray(nativeImage.createFromPath(trayIconPath))
 
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -164,7 +170,7 @@ function createWindow(): void {
     show: false,
     autoHideMenuBar: true,
     title: 'CapCutMove',
-    icon,
+    icon: appIconPath,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,

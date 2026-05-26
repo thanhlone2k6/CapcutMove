@@ -14,7 +14,7 @@ files:
 asarUnpack:
   - resources/**
 win:
-  icon: build/icon.ico
+  icon: resources/icon.ico
   executableName: CapCutMove
   target: nsis
 nsis:
@@ -23,7 +23,7 @@ nsis:
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 mac:
-  icon: build/icon.icns
+  icon: resources/icon.icns
   identity: null
   gatekeeperAssess: false
   target:
@@ -38,6 +38,7 @@ mac:
 dmg:
   artifactName: ${name}-${version}-${arch}.${ext}
 linux:
+  icon: resources/icon.png
   target:
     - AppImage
     - snap
