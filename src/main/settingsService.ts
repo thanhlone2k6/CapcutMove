@@ -29,6 +29,7 @@ export interface AppSettings {
     whisperPath?: string
   }
   quickLinks?: QuickLinkGroup[]
+  quickLinkShortcut?: string
 }
 
 const defaultSettings: AppSettings = {

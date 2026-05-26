@@ -16,7 +16,9 @@ import {
   CheckSquare,
   Square,
   Trash,
-  Settings
+  Settings,
+  Power,
+  PowerOff
 } from 'lucide-react'
 import { QuickLinkItem, QuickLinkGroup } from '../../../../../preload/index.d'
 
@@ -55,6 +57,109 @@ const formatDisplayPath = (item: QuickLinkItem): string => {
     }
   }
   return path
+}
+
+const getDisplayLabel = (item: QuickLinkItem): string => {
+  if (item.label && item.label.trim() !== '' && item.label !== item.path) {
+    return item.label
+  }
+  if (item.type === 'text') {
+    return item.label || item.path
+  }
+  return formatDisplayPath(item)
+}
+
+const GoogleDocsIcon = ({ size = 14 }: { size?: number }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" style={{ flexShrink: 0 }}>
+    <rect x="3" y="2" width="18" height="20" rx="2" fill="#4285F4" />
+    <path d="M7 7h10M7 11h10M7 15h6" stroke="white" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+)
+
+const GoogleSheetsIcon = ({ size = 14 }: { size?: number }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" style={{ flexShrink: 0 }}>
+    <rect x="3" y="2" width="18" height="20" rx="2" fill="#0F9D58" />
+    <path d="M8 6h8v12H8z" fill="white" opacity="0.2" />
+    <path d="M8 6v12M12 6v12M16 6v12M8 6h8M8 10h8M8 14h8M8 18h8" stroke="white" strokeWidth="1.5" />
+  </svg>
+)
+
+const GoogleSlidesIcon = ({ size = 14 }: { size?: number }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" style={{ flexShrink: 0 }}>
+    <rect x="3" y="2" width="18" height="20" rx="2" fill="#F4B400" />
+    <rect x="7" y="6" width="10" height="8" rx="1" fill="white" opacity="0.3" />
+    <path d="M9 10l3-2 3 2v4H9v-4z" fill="white" />
+  </svg>
+)
+
+const GoogleFormsIcon = ({ size = 14 }: { size?: number }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" style={{ flexShrink: 0 }}>
+    <rect x="3" y="2" width="18" height="20" rx="2" fill="#7248B9" />
+    <circle cx="7" cy="7" r="1.5" fill="white" />
+    <line x1="11" y1="7" x2="17" y2="7" stroke="white" strokeWidth="2" strokeLinecap="round" />
+    <circle cx="7" cy="12" r="1.5" fill="white" />
+    <line x1="11" y1="12" x2="17" y2="12" stroke="white" strokeWidth="2" strokeLinecap="round" />
+    <circle cx="7" cy="17" r="1.5" fill="white" />
+    <line x1="11" y1="17" x2="17" y2="17" stroke="white" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+)
+
+const GoogleDriveIcon = ({ size = 14 }: { size?: number }) => (
+  <svg viewBox="0 0 100 100" width={size} height={size} style={{ flexShrink: 0 }}>
+    <path d="M33.3 16.7L66.7 16.7L95.5 66.7L62.2 66.7Z" fill="#4285F4"/>
+    <path d="M33.3 16.7L4.5 66.7L33.3 66.7L62.2 66.7Z" fill="#34A853"/>
+    <path d="M4.5 66.7L18.8 91.7L81.2 91.7L95.5 66.7Z" fill="#FBBC05"/>
+  </svg>
+)
+
+const getItemIcon = (item: QuickLinkItem, size = 14) => {
+  if (item.type === 'folder') {
+    return <Folder size={size} />
+  }
+  if (item.type === 'text') {
+    return <FileText size={size} />
+  }
+
+  const path = item.path.toLowerCase()
+  if (path.includes('docs.google.com/document')) {
+    return <GoogleDocsIcon size={size} />
+  }
+  if (path.includes('docs.google.com/spreadsheets') || path.includes('docs.google.com/spreadshe')) {
+    return <GoogleSheetsIcon size={size} />
+  }
+  if (path.includes('docs.google.com/presentation')) {
+    return <GoogleSlidesIcon size={size} />
+  }
+  if (path.includes('docs.google.com/forms')) {
+    return <GoogleFormsIcon size={size} />
+  }
+  if (path.includes('drive.google.com')) {
+    return <GoogleDriveIcon size={size} />
+  }
+  if (path.includes('youtube.com') || path.includes('youtu.be')) {
+    return (
+      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" style={{ flexShrink: 0 }}>
+        <path d="M23 12s0-4.18-.39-5.74a3 3 0 0 0-2.11-2.11C18.94 3.75 12 3.75 12 3.75s-6.94 0-8.5.41a3 3 0 0 0-2.11 2.11C1 7.82 1 12 1 12s0 4.18.39 5.74a3 3 0 0 0 2.11 2.11C5.06 20.25 12 20.25 12 20.25s6.94 0 8.5-.41a3 3 0 0 0 2.11-2.11C23 16.18 23 12 23 12z" fill="#FF0000" />
+        <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="white" />
+      </svg>
+    )
+  }
+  if (path.includes('github.com')) {
+    return (
+      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+        <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+      </svg>
+    )
+  }
+  if (path.includes('facebook.com') || path.includes('fb.com')) {
+    return (
+      <svg viewBox="0 0 24 24" width={size} height={size} fill="#1877F2" style={{ flexShrink: 0 }}>
+        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+      </svg>
+    )
+  }
+
+  return <LinkIcon size={size} />
 }
 
 const CARD_COLORS = [
@@ -173,15 +278,27 @@ export default function QuickLinks(): React.JSX.Element {
   // Quick Input states
   const [quickInputText, setQuickInputText] = useState('')
   const [quickInputGroupName, setQuickInputGroupName] = useState('')
+  const [quickInputItemLabel, setQuickInputItemLabel] = useState('')
   const [showQuickAddPanel, setShowQuickAddPanel] = useState(false)
 
   // Form state for adding link to group
   const [newItemPath, setNewItemPath] = useState('')
+  const [newItemLabel, setNewItemLabel] = useState('')
   const [showAddItemForm, setShowAddItemForm] = useState(false)
+
+  // Item editing states
+  const [editingItemId, setEditingItemId] = useState<string | null>(null)
+  const [tempItemLabel, setTempItemLabel] = useState('')
+  const [isProcessingEmbedAll, setIsProcessingEmbedAll] = useState(false)
 
   // Edit group name state
   const [isEditingName, setIsEditingName] = useState(false)
   const [tempGroupName, setTempGroupName] = useState('')
+
+  // Windows autostart & Global Shortcut settings
+  const [autostart, setAutostart] = useState(false)
+  const [shortcut, setShortcut] = useState('Alt+Q')
+  const [isRecording, setIsRecording] = useState(false)
 
   // Context Menu state
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; groupId: string } | null>(null)
@@ -251,6 +368,16 @@ export default function QuickLinks(): React.JSX.Element {
         console.error('Failed to load deleted groups:', err)
       })
 
+    // Load autostart and shortcut settings
+    window.api.autostartGet().then(setAutostart)
+    window.api.shortcutGet().then(setShortcut)
+
+    // Listen for shortcut conflicts
+    const unsubConflict = window.api.onShortcutConflict((conflictedShortcut) => {
+      setErrorMsg(`Phím tắt ${conflictedShortcut} bị xung đột, vui lòng chọn phím khác!`)
+      setTimeout(() => setErrorMsg(null), 5000)
+    })
+
     // Listen for click to close context menu, quick add panel and settings dropdown
     const handleClickOutside = (e: MouseEvent) => {
       setContextMenu(null)
@@ -265,8 +392,129 @@ export default function QuickLinks(): React.JSX.Element {
     window.addEventListener('click', handleClickOutside)
     return () => {
       window.removeEventListener('click', handleClickOutside)
+      unsubConflict()
     }
   }, [])
+
+  // Keyboard shortcut recorder hook
+  useEffect(() => {
+    if (!isRecording) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+
+      const parts: string[] = []
+      if (e.ctrlKey) parts.push('Ctrl')
+      if (e.altKey) parts.push('Alt')
+      if (e.shiftKey) parts.push('Shift')
+
+      const keyName = e.key
+      if (keyName !== 'Control' && keyName !== 'Alt' && keyName !== 'Shift') {
+        let key = keyName.toUpperCase()
+        if (key === 'ARROWUP') key = 'Up'
+        if (key === 'ARROWDOWN') key = 'Down'
+        if (key === 'ARROWLEFT') key = 'Left'
+        if (key === 'ARROWRIGHT') key = 'Right'
+        if (key === ' ') key = 'Space'
+        parts.push(key)
+      }
+
+      if (parts.length >= 2 || (parts.length === 1 && /^F[1-9][0-2]?$/i.test(parts[0]))) {
+        const combo = parts.join('+')
+        setShortcut(combo)
+        window.api.shortcutSet(combo)
+        setIsRecording(false)
+        setSuccessMsg(`Đã đổi phím tắt thành: ${combo}`)
+        setTimeout(() => setSuccessMsg(null), 3000)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown, true)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, true)
+    }
+  }, [isRecording])
+
+  const handleToggleAutostart = async () => {
+    const newVal = !autostart
+    await window.api.autostartSet(newVal)
+    setAutostart(newVal)
+    setSuccessMsg(newVal ? 'Đã bật khởi động cùng Windows!' : 'Đã tắt khởi động cùng Windows!')
+    setTimeout(() => setSuccessMsg(null), 3000)
+  }
+
+  // Auto fetch title for newItemPath
+  useEffect(() => {
+    const trimmed = newItemPath.trim()
+    if (!trimmed) return
+
+    let urlToFetch = ''
+    if (/^https?:\/\//i.test(trimmed)) {
+      urlToFetch = trimmed
+    } else if (/^www\./i.test(trimmed)) {
+      urlToFetch = `https://${trimmed}`
+    } else {
+      const isWebUrl = trimmed.includes('.') && 
+                       !trimmed.includes('\\') && 
+                       !/^[a-zA-Z]:\\/i.test(trimmed) && 
+                       !/\s/.test(trimmed);
+      if (isWebUrl) {
+        urlToFetch = `https://${trimmed}`
+      }
+    }
+
+    if (!urlToFetch) return
+
+    const timer = setTimeout(async () => {
+      try {
+        const title = await window.api.fetchUrlTitle(urlToFetch)
+        if (title) {
+          setNewItemLabel((prev) => prev.trim() === '' ? title : prev)
+        }
+      } catch (err) {
+        console.error(err)
+      }
+    }, 600)
+
+    return () => clearTimeout(timer)
+  }, [newItemPath])
+
+  // Auto fetch title for quickInputText
+  useEffect(() => {
+    const trimmed = quickInputText.trim()
+    if (!trimmed) return
+
+    let urlToFetch = ''
+    if (/^https?:\/\//i.test(trimmed)) {
+      urlToFetch = trimmed
+    } else if (/^www\./i.test(trimmed)) {
+      urlToFetch = `https://${trimmed}`
+    } else {
+      const isWebUrl = trimmed.includes('.') && 
+                       !trimmed.includes('\\') && 
+                       !/^[a-zA-Z]:\\/i.test(trimmed) && 
+                       !/\s/.test(trimmed);
+      if (isWebUrl) {
+        urlToFetch = `https://${trimmed}`
+      }
+    }
+
+    if (!urlToFetch) return
+
+    const timer = setTimeout(async () => {
+      try {
+        const title = await window.api.fetchUrlTitle(urlToFetch)
+        if (title) {
+          setQuickInputItemLabel((prev) => prev.trim() === '' ? title : prev)
+        }
+      } catch (err) {
+        console.error(err)
+      }
+    }, 600)
+
+    return () => clearTimeout(timer)
+  }, [quickInputText])
 
   // Global mousemove and mouseup listeners during dragging
   useEffect(() => {
@@ -455,12 +703,27 @@ export default function QuickLinks(): React.JSX.Element {
     let updatedGroups = [...groups]
     let activeGp: QuickLinkGroup | null = null
 
+    const itemLabel = quickInputItemLabel.trim()
+    let finalLabel = itemLabel
+
+    if (detectedType === 'link' && !finalLabel) {
+      try {
+        const title = await window.api.fetchUrlTitle(normalizedPath)
+        if (title) {
+          finalLabel = title
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
     if (existingGroup) {
       const itemIsGroupName = input.toLowerCase() === targetGroupName.toLowerCase()
       if (itemIsGroupName) {
         setActiveGroup(existingGroup)
         setQuickInputText('')
         setQuickInputGroupName('')
+        setQuickInputItemLabel('')
         setShowQuickAddPanel(false)
         return
       }
@@ -468,7 +731,7 @@ export default function QuickLinks(): React.JSX.Element {
       const newItem: QuickLinkItem = {
         id: crypto.randomUUID(),
         type: detectedType,
-        label: normalizedPath,
+        label: finalLabel || normalizedPath,
         path: normalizedPath
       }
 
@@ -500,7 +763,7 @@ export default function QuickLinks(): React.JSX.Element {
         const newItem: QuickLinkItem = {
           id: crypto.randomUUID(),
           type: detectedType,
-          label: normalizedPath,
+          label: finalLabel || normalizedPath,
           path: normalizedPath
         }
         newGroup.items.push(newItem)
@@ -518,6 +781,7 @@ export default function QuickLinks(): React.JSX.Element {
       }
       setQuickInputText('')
       setQuickInputGroupName('')
+      setQuickInputItemLabel('')
       setShowQuickAddPanel(false)
       setSuccessMsg('Đã thêm thành công!')
       setTimeout(() => setSuccessMsg(null), 3000)
@@ -736,6 +1000,7 @@ export default function QuickLinks(): React.JSX.Element {
     setSuccessMsg(null)
 
     const trimmedPath = newItemPath.trim()
+    const trimmedLabel = newItemLabel.trim()
 
     if (!trimmedPath) {
       setErrorMsg('Vui lòng nhập đường dẫn thư mục, URL trang web hoặc văn bản.')
@@ -764,10 +1029,22 @@ export default function QuickLinks(): React.JSX.Element {
       }
     }
 
+    let finalLabel = trimmedLabel
+    if (detectedType === 'link' && !finalLabel) {
+      try {
+        const title = await window.api.fetchUrlTitle(normalizedPath)
+        if (title) {
+          finalLabel = title
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
     const newItem: QuickLinkItem = {
       id: crypto.randomUUID(),
       type: detectedType,
-      label: normalizedPath,
+      label: finalLabel || normalizedPath,
       path: normalizedPath
     }
 
@@ -787,6 +1064,7 @@ export default function QuickLinks(): React.JSX.Element {
       await window.api.quickLinksSave(updated)
       setGroups(updated)
       setNewItemPath('')
+      setNewItemLabel('')
       setShowAddItemForm(false)
       setSuccessMsg('Đã thêm liên kết vào nhóm!')
       setTimeout(() => setSuccessMsg(null), 3000)
@@ -819,6 +1097,41 @@ export default function QuickLinks(): React.JSX.Element {
       setTimeout(() => setSuccessMsg(null), 3000)
     } catch (err: any) {
       setErrorMsg(err.message || 'Không thể xóa liên kết.')
+    }
+  }
+
+  const handleRenameItem = async (groupId: string, itemId: string, newLabel: string) => {
+    setErrorMsg(null)
+    setSuccessMsg(null)
+
+    const trimmed = newLabel.trim()
+
+    const updated = groups.map((g) => {
+      if (g.id === groupId) {
+        const updatedItems = g.items.map((item) => {
+          if (item.id === itemId) {
+            return {
+              ...item,
+              label: trimmed || item.path
+            }
+          }
+          return item
+        })
+        const updatedGroup = { ...g, items: updatedItems }
+        setActiveGroup(updatedGroup)
+        return updatedGroup
+      }
+      return g
+    })
+
+    try {
+      await window.api.quickLinksSave(updated)
+      setGroups(updated)
+      setEditingItemId(null)
+      setSuccessMsg('Đã đổi tên liên kết!')
+      setTimeout(() => setSuccessMsg(null), 3000)
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Không thể đổi tên liên kết.')
     }
   }
 
@@ -903,6 +1216,58 @@ export default function QuickLinks(): React.JSX.Element {
     }
   }
 
+  const handleAutoEmbedAll = async () => {
+    setShowSettingsMenu(false)
+    setErrorMsg(null)
+    setSuccessMsg(null)
+
+    const totalLinks = groups.flatMap(g => g.items).filter(item => item.type === 'link')
+    if (totalLinks.length === 0) {
+      setErrorMsg('Không tìm thấy liên kết nào trong các nhóm để auto embed.')
+      setTimeout(() => setErrorMsg(null), 3000)
+      return
+    }
+
+    setIsProcessingEmbedAll(true)
+    setSuccessMsg(`Đang tiến hành tự động lấy tên cho ${totalLinks.length} liên kết...`)
+
+    let updatedCount = 0
+    const updatedGroups = await Promise.all(groups.map(async (group) => {
+      const updatedItems = await Promise.all(group.items.map(async (item) => {
+        if (item.type === 'link') {
+          try {
+            const title = await window.api.fetchUrlTitle(item.path)
+            if (title && title !== item.label) {
+              updatedCount++
+              return { ...item, label: title }
+            }
+          } catch (e) {
+            // ignore
+          }
+        }
+        return item
+      }))
+      return { ...group, items: updatedItems }
+    }))
+
+    try {
+      await window.api.quickLinksSave(updatedGroups)
+      setGroups(updatedGroups)
+      if (activeGroup) {
+        const currentActive = updatedGroups.find(g => g.id === activeGroup.id)
+        if (currentActive) {
+          setActiveGroup(currentActive)
+        }
+      }
+      setSuccessMsg(`Đã tự động lấy tên thành công cho ${updatedCount}/${totalLinks.length} liên kết!`)
+      setTimeout(() => setSuccessMsg(null), 4000)
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Không thể lưu sau khi cập nhật tự động liên kết.')
+    } finally {
+      setIsProcessingEmbedAll(false)
+    }
+  }
+
   return (
     <div
       style={{
@@ -925,6 +1290,56 @@ export default function QuickLinks(): React.JSX.Element {
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}>
+          {/* Autostart Toggle Button */}
+          <button
+            onClick={handleToggleAutostart}
+            style={{
+              background: autostart ? 'rgba(16, 185, 129, 0.1)' : 'none',
+              border: autostart ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid var(--border)',
+              color: autostart ? '#34d399' : 'var(--text-secondary)',
+              cursor: 'pointer',
+              padding: '8px',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'var(--transition)',
+              width: '40px',
+              height: '40px'
+            }}
+            title={autostart ? 'Khởi động cùng Windows: BẬT' : 'Khởi động cùng Windows: TẮT'}
+          >
+            {autostart ? <Power size={16} /> : <PowerOff size={16} />}
+          </button>
+
+          {/* Shortcut Setup Button */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginRight: '4px' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>Phím tắt:</span>
+            <button
+              onClick={() => setIsRecording(!isRecording)}
+              style={{
+                background: isRecording ? 'rgba(168, 85, 247, 0.1)' : 'var(--bg-surface)',
+                border: isRecording ? '1px solid var(--accent-purple)' : '1px solid var(--border)',
+                color: isRecording ? 'var(--accent-purple-hover)' : 'var(--text-primary)',
+                cursor: 'pointer',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                fontSize: '11px',
+                fontWeight: 600,
+                transition: 'var(--transition)',
+                outline: 'none',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: isRecording ? '0 0 8px rgba(168, 85, 247, 0.2)' : 'none'
+              }}
+              title="Click để đổi phím tắt mở nhanh popup"
+            >
+              {isRecording ? 'Bấm tổ hợp phím...' : shortcut}
+            </button>
+          </div>
+
           {/* Settings Button */}
           <button
             className="ql-settings-btn"
@@ -1020,6 +1435,41 @@ export default function QuickLinks(): React.JSX.Element {
                 className="context-menu-item"
               >
                 <span>📥</span> Nhập CSV
+              </button>
+
+              <div
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  color: 'var(--text-muted)',
+                  padding: '6px 12px',
+                  borderBottom: '1px solid var(--border)',
+                  borderTop: '1px solid var(--border)',
+                  marginTop: '4px'
+                }}
+              >
+                🔗 Công cụ liên kết
+              </div>
+              <button
+                onClick={handleAutoEmbedAll}
+                disabled={isProcessingEmbedAll}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: isProcessingEmbedAll ? 'var(--text-muted)' : 'var(--text-primary)',
+                  padding: '8px 12px',
+                  fontSize: '12px',
+                  cursor: isProcessingEmbedAll ? 'not-allowed' : 'pointer',
+                  textAlign: 'left',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  width: '100%',
+                  transition: 'all 0.2s ease'
+                }}
+                className="context-menu-item"
+              >
+                <span>🔄</span> {isProcessingEmbedAll ? 'Đang Auto Embed...' : 'Auto Embed toàn bộ'}
               </button>
             </div>
           )}
@@ -1163,6 +1613,7 @@ export default function QuickLinks(): React.JSX.Element {
                 onClick={() => {
                   setQuickInputText('')
                   setQuickInputGroupName('')
+                  setQuickInputItemLabel('')
                   setShowQuickAddPanel(false)
                 }}
                 style={{
@@ -1228,12 +1679,39 @@ export default function QuickLinks(): React.JSX.Element {
                 />
               </div>
 
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>
+                  Tên hiển thị liên kết (Không bắt buộc)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ví dụ: Trang chủ Dự án (Để trống tự đặt dạng embed)"
+                  value={quickInputItemLabel}
+                  onChange={(e) => setQuickInputItemLabel(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleQuickAddSubmit()
+                    }
+                  }}
+                  style={{
+                    background: 'var(--bg-main)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-primary)',
+                    borderRadius: '6px',
+                    padding: '6px 8px',
+                    fontSize: '12px',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '4px' }}>
                 <button
                   className="btn btn-secondary"
                   onClick={() => {
                     setQuickInputText('')
                     setQuickInputGroupName('')
+                    setQuickInputItemLabel('')
                     setShowQuickAddPanel(false)
                   }}
                   style={{ padding: '6px 12px', borderRadius: '8px', fontSize: '11px' }}
@@ -1572,6 +2050,7 @@ export default function QuickLinks(): React.JSX.Element {
                   </div>
                   {activeGroup.items.map((item) => {
                     const isCopied = copiedItemId === item.id
+                    const isEditing = editingItemId === item.id
                     return (
                       <div
                         key={item.id}
@@ -1587,92 +2066,188 @@ export default function QuickLinks(): React.JSX.Element {
                         }}
                         className="quicklink-item-row"
                       >
-                        <div
-                          onClick={() => handleOpenItem(item)}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '10px',
-                            flex: 1,
-                            minWidth: 0,
-                            cursor: 'pointer'
-                          }}
-                        >
-                          <span
-                            style={{
-                              display: 'flex',
-                              color: item.type === 'folder' ? 'var(--accent-purple-hover)' : item.type === 'link' ? '#60a5fa' : '#34d399'
-                            }}
-                          >
-                            {item.type === 'folder' ? <Folder size={14} /> : item.type === 'link' ? <LinkIcon size={14} /> : <FileText size={14} />}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: '13px',
-                              fontWeight: 500,
-                              color: 'var(--text-primary)',
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              direction: item.type === 'folder' ? 'rtl' : 'ltr',
-                              textAlign: 'left'
-                            }}
-                            title={item.path}
-                          >
-                            {item.type === 'text' ? item.label : formatDisplayPath(item)}
-                          </span>
-                        </div>
+                        {isEditing ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                            <span
+                              style={{
+                                display: 'flex',
+                                color: item.type === 'folder' ? 'var(--accent-purple-hover)' : item.type === 'link' ? '#60a5fa' : '#34d399',
+                                flexShrink: 0
+                              }}
+                            >
+                              {getItemIcon(item, 18)}
+                            </span>
+                            <input
+                              type="text"
+                              value={tempItemLabel}
+                              onChange={(e) => setTempItemLabel(e.target.value)}
+                              placeholder={item.path}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleRenameItem(activeGroup.id, item.id, tempItemLabel)
+                                if (e.key === 'Escape') setEditingItemId(null)
+                              }}
+                              style={{
+                                background: 'var(--bg-main)',
+                                border: '1px solid var(--accent-purple)',
+                                color: 'var(--text-primary)',
+                                borderRadius: '6px',
+                                padding: '4px 8px',
+                                fontSize: '12px',
+                                fontWeight: 500,
+                                outline: 'none',
+                                height: '26px',
+                                flex: 1,
+                                minWidth: 0,
+                                boxSizing: 'border-box'
+                              }}
+                              autoFocus
+                            />
+                            <button
+                              onClick={() => handleRenameItem(activeGroup.id, item.id, tempItemLabel)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#34d399',
+                                cursor: 'pointer',
+                                padding: '4px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                flexShrink: 0
+                              }}
+                              title="Lưu"
+                            >
+                              <Check size={14} />
+                            </button>
+                            <button
+                              onClick={() => setEditingItemId(null)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: 'var(--text-muted)',
+                                cursor: 'pointer',
+                                padding: '4px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                flexShrink: 0
+                              }}
+                              title="Hủy"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <div
+                              onClick={() => handleOpenItem(item)}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                flex: 1,
+                                minWidth: 0,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <span
+                                style={{
+                                  display: 'flex',
+                                  color: item.type === 'folder' ? 'var(--accent-purple-hover)' : item.type === 'link' ? '#60a5fa' : '#34d399'
+                                }}
+                              >
+                                {getItemIcon(item, 18)}
+                              </span>
+                              <span
+                                style={{
+                                  fontSize: '13px',
+                                  fontWeight: 500,
+                                  color: 'var(--text-primary)',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  direction: item.type === 'folder' ? 'rtl' : 'ltr',
+                                  textAlign: 'left'
+                                }}
+                                title={item.path}
+                              >
+                                {getDisplayLabel(item)}
+                              </span>
+                            </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '12px' }}>
-                          <button
-                            onClick={() => handleOpenItem(item)}
-                            style={{
-                              background: item.type === 'text' ? (isCopied ? 'rgba(52, 211, 153, 0.1)' : 'none') : 'none',
-                              border: item.type === 'text' ? (isCopied ? '1px solid #34d399' : '1px solid var(--border)') : 'none',
-                              color: item.type === 'text' ? (isCopied ? '#34d399' : 'var(--text-secondary)') : 'var(--accent-purple)',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '3px',
-                              padding: '4px 8px',
-                              borderRadius: '6px',
-                              transition: 'var(--transition)'
-                            }}
-                            className="quicklink-open-item-btn"
-                          >
-                            {item.type === 'text' ? (
-                              <>
-                                <span>{isCopied ? 'Đã copy' : 'Copy'}</span>
-                                {isCopied ? <span style={{ fontSize: '10px' }}>✓</span> : <Copy size={10} />}
-                              </>
-                            ) : (
-                              <>
-                                <span>Mở</span>
-                                <ExternalLink size={10} />
-                              </>
-                            )}
-                          </button>
-                          <button
-                            onClick={(e) => handleDeleteItem(activeGroup.id, item.id, e)}
-                            style={{
-                              background: 'none',
-                              border: 'none',
-                              color: 'var(--text-muted)',
-                              cursor: 'pointer',
-                              padding: '4px',
-                              borderRadius: '6px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              transition: 'var(--transition)'
-                            }}
-                            className="quicklink-delete-item-btn"
-                          >
-                            <X size={12} />
-                          </button>
-                        </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '12px' }}>
+                              <button
+                                onClick={() => handleOpenItem(item)}
+                                style={{
+                                  background: item.type === 'text' ? (isCopied ? 'rgba(52, 211, 153, 0.1)' : 'none') : 'none',
+                                  border: item.type === 'text' ? (isCopied ? '1px solid #34d399' : '1px solid var(--border)') : 'none',
+                                  color: item.type === 'text' ? (isCopied ? '#34d399' : 'var(--text-secondary)') : 'var(--accent-purple)',
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                  padding: '4px 8px',
+                                  borderRadius: '6px',
+                                  transition: 'var(--transition)'
+                                }}
+                                className="quicklink-open-item-btn"
+                              >
+                                {item.type === 'text' ? (
+                                  <>
+                                    <span>{isCopied ? 'Đã copy' : 'Copy'}</span>
+                                    {isCopied ? <span style={{ fontSize: '10px' }}>✓</span> : <Copy size={10} />}
+                                  </>
+                                ) : (
+                                  <>
+                                    <span>Mở</span>
+                                    <ExternalLink size={10} />
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setEditingItemId(item.id)
+                                  setTempItemLabel(item.label === item.path ? '' : item.label)
+                                }}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: 'var(--text-muted)',
+                                  cursor: 'pointer',
+                                  padding: '4px',
+                                  borderRadius: '6px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'var(--transition)'
+                                }}
+                                title="Sửa tên"
+                                className="quicklink-edit-item-btn"
+                              >
+                                <Edit2 size={12} />
+                              </button>
+                              <button
+                                onClick={(e) => handleDeleteItem(activeGroup.id, item.id, e)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: 'var(--text-muted)',
+                                  cursor: 'pointer',
+                                  padding: '4px',
+                                  borderRadius: '6px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'var(--transition)'
+                                }}
+                                className="quicklink-delete-item-btn"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     )
                   })}
@@ -1737,6 +2312,25 @@ export default function QuickLinks(): React.JSX.Element {
                     }}
                   />
 
+                  {/* Custom Name / Label Input */}
+                  <input
+                    type="text"
+                    placeholder="Tên hiển thị gợi nhớ (Không bắt buộc)..."
+                    value={newItemLabel}
+                    onChange={(e) => setNewItemLabel(e.target.value)}
+                    style={{
+                      width: '100%',
+                      background: 'var(--bg-main)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text-primary)',
+                      borderRadius: '6px',
+                      padding: '6px 8px',
+                      fontSize: '12px',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+
                   {/* Form Actions */}
                   <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', marginTop: '2px' }}>
                     <button
@@ -1745,6 +2339,7 @@ export default function QuickLinks(): React.JSX.Element {
                         setShowAddItemForm(false)
                         setErrorMsg(null)
                         setNewItemPath('')
+                        setNewItemLabel('')
                       }}
                       style={{
                         background: 'none',

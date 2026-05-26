@@ -5,13 +5,14 @@ import 'driver.js/dist/driver.css'
 import ExportProject from './pages/ExportProject'
 import ImportProject from './pages/ImportProject'
 import VipTools from './pages/VipTools'
+import QuickLinks from './pages/VipTools/QuickLinks'
 import CreatorWidget from './components/CreatorWidget'
 import SupportModal from './components/SupportModal'
 import UpdateWidget from './components/UpdateWidget'
 import './index.css'
 
 type MainTab = 'free' | 'vip'
-type FreeSubTab = 'export' | 'import'
+type FreeSubTab = 'export' | 'import' | 'quicklinks'
 
 function App(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<MainTab>('free')
@@ -395,6 +396,12 @@ function App(): React.JSX.Element {
               >
                 Import Project
               </button>
+              <button
+                className={`free-sub-tab ${freeSubTab === 'quicklinks' ? 'active' : ''}`}
+                onClick={() => setFreeSubTab('quicklinks')}
+              >
+                Lưu nhanh
+              </button>
             </div>
           </div>
 
@@ -405,6 +412,9 @@ function App(): React.JSX.Element {
             </div>
             <div style={{ display: freeSubTab === 'import' ? 'block' : 'none', height: '100%' }}>
               <ImportProject settings={settings} onSettingsChange={setSettings} />
+            </div>
+            <div style={{ display: freeSubTab === 'quicklinks' ? 'block' : 'none', height: '100%' }}>
+              <QuickLinks />
             </div>
           </div>
         </div>

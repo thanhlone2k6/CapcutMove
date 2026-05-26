@@ -1,15 +1,162 @@
-import { app, shell, BrowserWindow, ipcMain, protocol } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, protocol, Tray, Menu, nativeImage, globalShortcut, screen } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { registerIpcHandlers } from './ipcHandlers'
 import { setupAutoUpdater } from './updateService'
 import { trackAppOpened, shutdownAnalytics } from './analytics'
+import { getSettings } from './settingsService'
 import fs from 'fs-extra'
+
+let mainWindow: BrowserWindow | null = null
+let popupWindow: BrowserWindow | null = null
+let tray: Tray | null = null
+let isQuitting = false
+
+function createTray(win: BrowserWindow) {
+  tray = new Tray(nativeImage.createFromPath(icon))
+
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'Mở CapCut Move',
+      click: () => {
+        win.show()
+        win.focus()
+      }
+    },
+    { type: 'separator' },
+    {
+      label: 'Thoát',
+      click: () => {
+        isQuitting = true
+        app.quit()
+      }
+    }
+  ])
+
+  tray.setToolTip('CapCut Move')
+  tray.setContextMenu(contextMenu)
+
+  tray.on('double-click', () => {
+    win.show()
+    win.focus()
+  })
+}
+
+function registerQuickLinkShortcut(shortcut: string) {
+  globalShortcut.unregisterAll()
+
+  console.log('[shortcut] registering:', shortcut)
+  const success = globalShortcut.register(shortcut, () => {
+    console.log('[shortcut] triggered:', shortcut)
+    if (popupWindow && !popupWindow.isDestroyed()) {
+      console.log('[shortcut] closing existing window')
+      popupWindow.close()
+      popupWindow = null
+      return
+    }
+    showQuickLinkPopup()
+  })
+
+  console.log('[shortcut] register success:', success)
+
+  if (!success && mainWindow && !mainWindow.isDestroyed()) {
+    console.warn(`Shortcut ${shortcut} bị conflict, không register được`)
+    mainWindow.webContents.send('shortcut:conflict', shortcut)
+  }
+}
+
+function reRegisterShortcut(shortcut: string) {
+  registerQuickLinkShortcut(shortcut)
+}
+
+function showQuickLinkPopup() {
+  console.log('[popup] showQuickLinkPopup called')
+  const { x, y } = screen.getCursorScreenPoint()
+  console.log('[popup] cursor position:', x, y)
+
+  if (popupWindow && !popupWindow.isDestroyed()) {
+    console.log('[popup] closing existing window')
+    popupWindow.close()
+    popupWindow = null
+    return
+  }
+
+  const display = screen.getDisplayNearestPoint({ x, y })
+
+  const popupWidth = 260
+  const popupHeight = 400
+  const posX = Math.min(x, display.bounds.x + display.bounds.width - popupWidth)
+  const posY = Math.min(y, display.bounds.y + display.bounds.height - popupHeight)
+
+  console.log('[popup] creating new BrowserWindow at posX, posY:', posX, posY)
+  popupWindow = new BrowserWindow({
+    width: popupWidth,
+    height: popupHeight,
+    x: posX,
+    y: posY,
+    frame: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    transparent: true,
+    show: false, // Prevent immediate display until ready
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false
+    }
+  })
+
+  // Redirect console logs/errors from popup window to main terminal
+  popupWindow.webContents.on('console-message', (_event, _level, message, line, sourceId) => {
+    console.log(`[popup console] ${message} (at ${sourceId}:${line})`)
+  })
+
+  let showTime = Date.now()
+
+  popupWindow.once('ready-to-show', () => {
+    console.log('[popup] ready-to-show fired')
+    if (popupWindow && !popupWindow.isDestroyed()) {
+      popupWindow.show()
+      popupWindow.focus()
+      showTime = Date.now()
+    }
+  })
+
+  popupWindow.webContents.on('did-fail-load', (_e, code, desc) => {
+    console.error('[popup] failed to load:', code, desc)
+  })
+
+  const url = is.dev && process.env['ELECTRON_RENDERER_URL']
+    ? `${process.env['ELECTRON_RENDERER_URL']}/popup.html`
+    : join(__dirname, '../renderer/popup.html')
+
+  console.log('[popup] loading URL:', url)
+  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+    popupWindow.loadURL(url)
+  } else {
+    popupWindow.loadFile(url)
+  }
+
+  // Prevent closing immediately when transient blur occurs within 600ms of display
+  popupWindow.on('blur', () => {
+    const elapsed = Date.now() - showTime
+    console.log('[popup] window lost focus, elapsed ms:', elapsed)
+    if (elapsed > 600) {
+      console.log('[popup] closing window due to focus loss')
+      popupWindow?.close()
+      popupWindow = null
+    } else {
+      console.log('[popup] ignored transient blur event')
+    }
+  })
+}
 
 function createWindow(): void {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     minWidth: 1000,
@@ -26,13 +173,22 @@ function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
+    if (!app.getLoginItemSettings().wasOpenedAsHidden) {
+      mainWindow?.show()
+    }
+  })
+
+  mainWindow.on('close', (event) => {
+    if (!isQuitting) {
+      event.preventDefault()
+      mainWindow?.hide()
+    }
   })
 
   // macOS: force webContents focus when window is activated so keyboard
   // events reach the renderer immediately (without requiring a click)
   mainWindow.on('focus', () => {
-    mainWindow.webContents.focus()
+    mainWindow?.webContents.focus()
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -48,7 +204,16 @@ function createWindow(): void {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
 
-  registerIpcHandlers(mainWindow)
+  // Create Tray icon
+  createTray(mainWindow)
+
+  // Load settings and register shortcut
+  getSettings().then((settings) => {
+    const shortcut = settings.quickLinkShortcut ?? 'Alt+Q'
+    registerQuickLinkShortcut(shortcut)
+  })
+
+  registerIpcHandlers(mainWindow, reRegisterShortcut)
 
   // Initialize auto updater
   setupAutoUpdater(mainWindow)
@@ -128,7 +293,12 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
+  isQuitting = true
   shutdownAnalytics()
+})
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll()
 })
 
 // In this file you can include the rest of your app's specific main process

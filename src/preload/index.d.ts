@@ -148,6 +148,12 @@ export interface API {
   quickLinksOpen: (item: { type: 'folder' | 'link'; path: string }) => Promise<{ success: boolean; error?: string }>
   quickLinksExportCsv: (csvContent: string) => Promise<{ success: boolean }>
   quickLinksImportCsv: () => Promise<{ success: boolean; content?: string }>
+  fetchUrlTitle: (url: string) => Promise<string | null>
+  autostartGet: () => Promise<boolean>
+  autostartSet: (enable: boolean) => Promise<boolean>
+  shortcutGet: () => Promise<string>
+  shortcutSet: (shortcut: string) => Promise<boolean>
+  onShortcutConflict: (callback: (shortcut: string) => void) => () => void
 
   sep: string
 }

@@ -141,6 +141,16 @@ const api = {
     ipcRenderer.invoke('quicklinks:open', item),
   quickLinksExportCsv: (csvContent: string) => ipcRenderer.invoke('quicklinks:export-csv', csvContent),
   quickLinksImportCsv: () => ipcRenderer.invoke('quicklinks:import-csv'),
+  fetchUrlTitle: (url: string) => ipcRenderer.invoke('fetch-url-title', url),
+  autostartGet: () => ipcRenderer.invoke('autostart:get'),
+  autostartSet: (enable: boolean) => ipcRenderer.invoke('autostart:set', enable),
+  shortcutGet: () => ipcRenderer.invoke('shortcut:get'),
+  shortcutSet: (shortcut: string) => ipcRenderer.invoke('shortcut:set', shortcut),
+  onShortcutConflict: (callback: (shortcut: string) => void) => {
+    const sub = (_event: any, shortcut: string) => callback(shortcut)
+    ipcRenderer.on('shortcut:conflict', sub)
+    return () => ipcRenderer.removeListener('shortcut:conflict', sub)
+  },
 
   sep: process.platform === 'win32' ? '\\' : '/'
 }

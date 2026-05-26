@@ -14,7 +14,10 @@ import fs from 'fs-extra'
 import path from 'path'
 import { getAvailableName } from './utils'
 
-export function registerIpcHandlers(mainWindow: Electron.BrowserWindow) {
+export function registerIpcHandlers(
+  mainWindow: Electron.BrowserWindow,
+  reRegisterShortcut?: (shortcut: string) => void
+) {
   ipcMain.handle('select-folder', async () => {
     const result = await dialog.showOpenDialog(mainWindow, {
       properties: ['openDirectory']
@@ -350,5 +353,61 @@ export function registerIpcHandlers(mainWindow: Electron.BrowserWindow) {
       return { success: true, content }
     }
     return { success: false }
+  })
+
+  ipcMain.handle('fetch-url-title', async (_, url: string) => {
+    try {
+      const axios = require('axios')
+      const response = await axios.get(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        },
+        timeout: 4000
+      })
+      const html = response.data
+      if (typeof html === 'string') {
+        const match = html.match(/<title>([^<]+)<\/title>/i)
+        if (match && match[1]) {
+          let title = match[1].trim()
+          title = title
+            .replace(/&amp;/g, '&')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+          // Remove Google suffix (e.g., " - Google Docs", " - Google Sheets")
+          title = title.replace(/\s*-\s*Google\s+(Docs|Sheets|Slides|Forms|Drawings)\s*$/i, '')
+          return title
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch URL title:', err)
+    }
+    return null
+  })
+
+  ipcMain.handle('autostart:get', () => {
+    return app.getLoginItemSettings().openAtLogin
+  })
+
+  ipcMain.handle('autostart:set', (_, enable: boolean) => {
+    app.setLoginItemSettings({
+      openAtLogin: enable,
+      openAsHidden: true
+    })
+    return true
+  })
+
+  ipcMain.handle('shortcut:get', async () => {
+    const settings = await settingsService.getSettings()
+    return settings.quickLinkShortcut ?? 'Alt+Q'
+  })
+
+  ipcMain.handle('shortcut:set', async (_, shortcut: string) => {
+    await settingsService.saveSettings({ quickLinkShortcut: shortcut })
+    if (reRegisterShortcut) {
+      reRegisterShortcut(shortcut)
+    }
+    return true
   })
 }
