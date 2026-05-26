@@ -1109,13 +1109,17 @@ h3 {
   filter: drop-shadow(0 0 4px rgba(168, 85, 247, 0.5));
 }
 
-/* VIP tab — golden accent */
+/* VIP tab — golden accent (always visible) */
+.tab-btn-vip {
+  color: #d97706;
+}
+
 .tab-btn-vip .tab-vip-icon {
   transition: var(--transition);
 }
 
 .tab-btn-vip .tab-vip-icon.locked {
-  color: var(--text-muted);
+  color: #d97706;
 }
 
 .tab-btn-vip .tab-vip-icon.unlocked {
@@ -1123,8 +1127,12 @@ h3 {
   filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.6));
 }
 
+.tab-btn-vip:hover {
+  color: #f59e0b;
+}
+
 .tab-btn-vip:hover .tab-vip-icon.locked {
-  color: var(--text-secondary);
+  color: #f59e0b;
 }
 
 .tab-btn-vip:hover .tab-vip-icon.unlocked {
