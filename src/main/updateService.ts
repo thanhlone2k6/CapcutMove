@@ -3,6 +3,16 @@ import { BrowserWindow, ipcMain, app } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import axios from 'axios'
 
+function isVersionGreater(val1: string, val2: string): boolean {
+  const parse = (v: string) => v.trim().replace(/^v/, '').split('.').map(Number)
+  const [major1, minor1, patch1 = 0] = parse(val1)
+  const [major2, minor2, patch2 = 0] = parse(val2)
+
+  if (major1 !== major2) return major1 > major2
+  if (minor1 !== minor2) return minor1 > minor2
+  return patch1 > patch2
+}
+
 export function setupAutoUpdater(mainWindow: BrowserWindow) {
   autoUpdater.autoDownload = true
   autoUpdater.autoInstallOnAppQuit = true
@@ -38,7 +48,7 @@ export function setupAutoUpdater(mainWindow: BrowserWindow) {
       const response = await axios.get(GITHUB_API, { timeout: 10000 })
       const latestVersion = response.data.tag_name.replace('v', '')
 
-      if (latestVersion !== currentVersion) {
+      if (isVersionGreater(latestVersion, currentVersion)) {
         // New version found
         sendStatusToWindow('available', { version: latestVersion })
         if (!is.dev) {
