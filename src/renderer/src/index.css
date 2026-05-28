@@ -370,7 +370,7 @@ body {
 }
 
 /* Header/Tabs */
-.header {
+.app-header {
   display: flex;
   border-bottom: 1px solid var(--border);
   background: var(--bg-surface);
@@ -380,7 +380,7 @@ body {
   flex-shrink: 0;
 }
 
-.tab-btn {
+.app-tab-btn {
   background: none;
   border: none;
   color: var(--text-secondary);
@@ -394,15 +394,15 @@ body {
   font-family: 'Inter', sans-serif;
 }
 
-.tab-btn:hover {
+.app-tab-btn:hover {
   color: var(--text-primary);
 }
 
-.tab-btn.active {
+.app-tab-btn.active {
   color: var(--accent-purple);
 }
 
-.tab-btn.active::after {
+.app-tab-btn.active::after {
   content: '';
   position: absolute;
   bottom: 0;
@@ -1093,58 +1093,58 @@ h3 {
 /* ═══════════════════════════════════════════════════
    Main Tab Bar — Free & VIP
    ═══════════════════════════════════════════════════ */
-.tab-btn-free,
-.tab-btn-vip {
+.app-tab-btn-free,
+.app-tab-btn-vip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
-.tab-btn-free .tab-free-icon {
+.app-tab-btn-free .tab-free-icon {
   color: var(--accent-purple);
   transition: var(--transition);
 }
 
-.tab-btn-free.active .tab-free-icon {
+.app-tab-btn-free.active .tab-free-icon {
   filter: drop-shadow(0 0 4px rgba(168, 85, 247, 0.5));
 }
 
 /* VIP tab — golden accent (always visible) */
-.tab-btn-vip {
+.app-tab-btn-vip {
   color: #d97706;
 }
 
-.tab-btn-vip .tab-vip-icon {
+.app-tab-btn-vip .tab-vip-icon {
   transition: var(--transition);
 }
 
-.tab-btn-vip .tab-vip-icon.locked {
+.app-tab-btn-vip .tab-vip-icon.locked {
   color: #d97706;
 }
 
-.tab-btn-vip .tab-vip-icon.unlocked {
+.app-tab-btn-vip .tab-vip-icon.unlocked {
   color: #fbbf24;
   filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.6));
 }
 
-.tab-btn-vip:hover {
+.app-tab-btn-vip:hover {
   color: #f59e0b;
 }
 
-.tab-btn-vip:hover .tab-vip-icon.locked {
+.app-tab-btn-vip:hover .tab-vip-icon.locked {
   color: #f59e0b;
 }
 
-.tab-btn-vip:hover .tab-vip-icon.unlocked {
+.app-tab-btn-vip:hover .tab-vip-icon.unlocked {
   color: #f59e0b;
   filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.7));
 }
 
-.tab-btn-vip.active {
+.app-tab-btn-vip.active {
   color: #f59e0b;
 }
 
-.tab-btn-vip.active::after {
+.app-tab-btn-vip.active::after {
   background: linear-gradient(90deg, #f59e0b, #fbbf24) !important;
 }
 
@@ -2842,5 +2842,32 @@ h3 {
 
 .context-menu-item.danger:hover {
   background: rgba(239, 68, 68, 0.1) !important;
+}
+
+/* Watermark & SFX Vault Styles */
+.drag-drop-zone-hover:hover {
+  border-color: var(--accent-purple) !important;
+  background: rgba(168, 85, 247, 0.05) !important;
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.1);
+}
+
+.sfx-vault-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-purple) !important;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3), 0 0 8px rgba(168, 85, 247, 0.2);
+}
+
+.sfx-vault-card:active {
+  cursor: grabbing !important;
+}
+
+.vip-sub-tab-badge {
+  background: var(--accent-purple);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  margin-left: 6px;
 }
 

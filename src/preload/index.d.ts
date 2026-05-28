@@ -37,6 +37,29 @@ export interface QuickLinkGroup {
   items: QuickLinkItem[]
 }
 
+export interface WatermarkJob {
+  videoPaths: string[]
+  logoPath: string
+  position: { x: number; y: number }
+  size: { width: number; height: number }
+  opacity: number
+  outputDir: string
+}
+
+export interface SfxFile {
+  id: string
+  name: string
+  filePath: string
+  addedAt: number
+}
+
+export interface SfxGroup {
+  id: string
+  name: string
+  color: string
+  files: SfxFile[]
+}
+
 export interface API {
   selectFolder: () => Promise<string | null>
   selectZipFile: () => Promise<string | null>
@@ -154,6 +177,26 @@ export interface API {
   shortcutGet: () => Promise<string>
   shortcutSet: (shortcut: string) => Promise<boolean>
   onShortcutConflict: (callback: (shortcut: string) => void) => () => void
+
+  // Watermark APIs
+  watermarkStart: (job: WatermarkJob) => Promise<void>
+  watermarkCancel: () => Promise<void>
+  watermarkGetVideoInfo: (path: string) => Promise<{ width: number; height: number }>
+  onWatermarkProgress: (callback: (data: { current: number; total: number; fileName: string; percent?: number; filePercent?: number }) => void) => () => void
+  onWatermarkDone: (callback: () => void) => () => void
+  onWatermarkError: (callback: (msg: string) => void) => () => void
+
+  // SFX APIs
+  sfxLoadLibrary: () => Promise<SfxGroup[]>
+  sfxSaveLibrary: (library: SfxGroup[]) => Promise<void>
+  sfxAddFiles: (groupId: string, filePaths: string[]) => Promise<SfxFile[]>
+  sfxStartDrag: (filePath: string) => void
+  sfxExportLibrary: () => Promise<string | null>
+  sfxImportLibrary: (zipPath: string, mode: 'merge' | 'replace') => Promise<SfxGroup[]>
+  sfxDeleteFile: (groupId: string, fileId: string) => Promise<SfxGroup[]>
+  sfxMoveToGroup: (fileId: string, fromGroupId: string, toGroupId: string) => Promise<SfxGroup[]>
+  sfxEditFile: (groupId: string, fileId: string, trimStart: number, trimEnd: number, volume: number) => Promise<SfxGroup[]>
+  sfxReadFile: (filePath: string) => Promise<ArrayBuffer>
 
   sep: string
 }

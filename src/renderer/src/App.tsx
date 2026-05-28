@@ -4,6 +4,7 @@ import { driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
 import ExportProject from './pages/ExportProject'
 import ImportProject from './pages/ImportProject'
+import BatchWatermark from './pages/BatchWatermark'
 import VipTools from './pages/VipTools'
 import QuickLinks from './pages/VipTools/QuickLinks'
 import CreatorWidget from './components/CreatorWidget'
@@ -12,7 +13,7 @@ import UpdateWidget from './components/UpdateWidget'
 import './index.css'
 
 type MainTab = 'free' | 'vip'
-type FreeSubTab = 'export' | 'import' | 'quicklinks'
+type FreeSubTab = 'export' | 'import' | 'quicklinks' | 'watermark'
 
 function App(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<MainTab>('free')
@@ -327,16 +328,16 @@ function App(): React.JSX.Element {
       )}
 
       {/* ═══ Main Tab Bar ═══ */}
-      <div className="header">
+      <div className="app-header">
         <button
-          className={`tab-btn tab-btn-free ${activeTab === 'free' ? 'active' : ''}`}
+          className={`app-tab-btn app-tab-btn-free ${activeTab === 'free' ? 'active' : ''}`}
           onClick={() => setActiveTab('free')}
         >
           <Zap size={14} className="tab-free-icon" />
           Free
         </button>
         <button
-          className={`tab-btn tab-btn-vip ${activeTab === 'vip' ? 'active' : ''}`}
+          className={`app-tab-btn app-tab-btn-vip ${activeTab === 'vip' ? 'active' : ''}`}
           onClick={() => setActiveTab('vip')}
         >
           {isVipActive ? (
@@ -348,14 +349,15 @@ function App(): React.JSX.Element {
         </button>
       </div>
 
-      <div className="main-content">
+      <div className="main-content" style={{ display: 'flex', flexDirection: 'column' }}>
         <UpdateWidget />
 
         {/* ═══ FREE TAB ═══ */}
         <div
           style={{
             display: activeTab === 'free' ? 'flex' : 'none',
-            height: '100%',
+            flex: 1,
+            minHeight: 0,
             flexDirection: 'column'
           }}
         >
@@ -402,11 +404,17 @@ function App(): React.JSX.Element {
               >
                 Lưu nhanh
               </button>
+              <button
+                className={`free-sub-tab ${freeSubTab === 'watermark' ? 'active' : ''}`}
+                onClick={() => setFreeSubTab('watermark')}
+              >
+                Đóng Dấu
+              </button>
             </div>
           </div>
 
           {/* Free sub-tab content */}
-          <div className="free-sub-content">
+          <div className="free-sub-content" style={{ flex: 1, minHeight: 0 }}>
             <div style={{ display: freeSubTab === 'export' ? 'block' : 'none', height: '100%' }}>
               <ExportProject settings={settings} onSettingsChange={setSettings} />
             </div>
@@ -416,11 +424,14 @@ function App(): React.JSX.Element {
             <div style={{ display: freeSubTab === 'quicklinks' ? 'block' : 'none', height: '100%' }}>
               <QuickLinks />
             </div>
+            <div style={{ display: freeSubTab === 'watermark' ? 'block' : 'none', height: '100%' }}>
+              <BatchWatermark />
+            </div>
           </div>
         </div>
 
         {/* ═══ VIP TAB ═══ */}
-        <div style={{ display: activeTab === 'vip' ? 'block' : 'none', height: '100%' }}>
+        <div style={{ display: activeTab === 'vip' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
           <VipTools
             settings={settings}
             onSettingsChange={setSettings}

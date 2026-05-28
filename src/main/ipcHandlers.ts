@@ -10,6 +10,8 @@ import * as pathPatchService from './pathPatchService'
 import * as licenseService from './licenseService'
 import * as videoDownloadService from './videoDownloadService'
 import * as transcriptService from './transcriptService'
+import * as watermarkService from './watermarkService'
+import * as sfxService from './sfxService'
 import fs from 'fs-extra'
 import path from 'path'
 import { getAvailableName } from './utils'
@@ -409,5 +411,71 @@ export function registerIpcHandlers(
       reRegisterShortcut(shortcut)
     }
     return true
+  })
+
+  // ─── Watermark Handlers ──────────────────────────────────
+  ipcMain.handle('watermark:start', async (_, job: any) => {
+    return await watermarkService.startJob(mainWindow, job)
+  })
+
+  ipcMain.handle('watermark:cancel', async () => {
+    watermarkService.cancelJob()
+  })
+
+  ipcMain.handle('watermark:getVideoInfo', async (_, videoPath: string) => {
+    return await watermarkService.getVideoInfo(videoPath)
+  })
+
+  // ─── SFX Vault Handlers ───────────────────────────────────
+  ipcMain.handle('sfx:loadLibrary', async () => {
+    return await sfxService.loadLibrary()
+  })
+
+  ipcMain.handle('sfx:saveLibrary', async (_, library: any[]) => {
+    await sfxService.saveLibrary(library)
+  })
+
+  ipcMain.handle('sfx:addFiles', async (_, groupId: string, filePaths: string[]) => {
+    return await sfxService.addFiles(groupId, filePaths)
+  })
+
+  ipcMain.handle('sfx:exportLibrary', async () => {
+    return await sfxService.exportLibrary(mainWindow)
+  })
+
+  ipcMain.handle('sfx:importLibrary', async (_, zipPath: string, mode: 'merge' | 'replace') => {
+    return await sfxService.importLibrary(zipPath, mode)
+  })
+
+  ipcMain.handle('sfx:deleteFile', async (_, groupId: string, fileId: string) => {
+    return await sfxService.deleteFile(groupId, fileId)
+  })
+
+  ipcMain.handle('sfx:moveToGroup', async (_, fileId: string, fromGroupId: string, toGroupId: string) => {
+    return await sfxService.moveToGroup(fileId, fromGroupId, toGroupId)
+  })
+
+  ipcMain.handle('sfx:editFile', async (_, groupId: string, fileId: string, trimStart: number, trimEnd: number, volume: number) => {
+    return await sfxService.editFile(groupId, fileId, trimStart, trimEnd, volume)
+  })
+
+  ipcMain.handle('sfx:readFile', async (_, filePath: string) => {
+    const fs = require('fs')
+    return fs.readFileSync(filePath).buffer // returns ArrayBuffer-like to renderer
+  })
+
+  ipcMain.on('sfx:startDrag', (event, filePath: string) => {
+    try {
+      const isWin = process.platform === 'win32'
+      const defaultIcon = isWin
+        ? path.join(__dirname, '../../resources/icon.ico')
+        : path.join(__dirname, '../../resources/icon.png')
+      event.sender.startDrag({
+        file: filePath,
+        icon: defaultIcon
+      })
+    } catch (err) {
+      console.error('Failed to start drag:', err)
+    }
   })
 }

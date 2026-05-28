@@ -152,6 +152,38 @@ const api = {
     return () => ipcRenderer.removeListener('shortcut:conflict', sub)
   },
 
+  // Watermark APIs
+  watermarkStart: (job: any) => ipcRenderer.invoke('watermark:start', job),
+  watermarkCancel: () => ipcRenderer.invoke('watermark:cancel'),
+  watermarkGetVideoInfo: (path: string) => ipcRenderer.invoke('watermark:getVideoInfo', path),
+  onWatermarkProgress: (callback: (data: any) => void) => {
+    const sub = (_event: any, data: any) => callback(data)
+    ipcRenderer.on('watermark:progress', sub)
+    return () => ipcRenderer.removeListener('watermark:progress', sub)
+  },
+  onWatermarkDone: (callback: () => void) => {
+    const sub = () => callback()
+    ipcRenderer.on('watermark:done', sub)
+    return () => ipcRenderer.removeListener('watermark:done', sub)
+  },
+  onWatermarkError: (callback: (msg: string) => void) => {
+    const sub = (_event: any, msg: string) => callback(msg)
+    ipcRenderer.on('watermark:error', sub)
+    return () => ipcRenderer.removeListener('watermark:error', sub)
+  },
+
+  // SFX APIs
+  sfxLoadLibrary: () => ipcRenderer.invoke('sfx:loadLibrary'),
+  sfxSaveLibrary: (library: any[]) => ipcRenderer.invoke('sfx:saveLibrary', library),
+  sfxAddFiles: (groupId: string, filePaths: string[]) => ipcRenderer.invoke('sfx:addFiles', groupId, filePaths),
+  sfxStartDrag: (filePath: string) => ipcRenderer.send('sfx:startDrag', filePath),
+  sfxExportLibrary: () => ipcRenderer.invoke('sfx:exportLibrary'),
+  sfxImportLibrary: (zipPath: string, mode: 'merge' | 'replace') => ipcRenderer.invoke('sfx:importLibrary', zipPath, mode),
+  sfxDeleteFile: (groupId: string, fileId: string) => ipcRenderer.invoke('sfx:deleteFile', groupId, fileId),
+  sfxMoveToGroup: (fileId: string, fromGroupId: string, toGroupId: string) => ipcRenderer.invoke('sfx:moveToGroup', fileId, fromGroupId, toGroupId),
+  sfxEditFile: (groupId: string, fileId: string, trimStart: number, trimEnd: number, volume: number) => ipcRenderer.invoke('sfx:editFile', groupId, fileId, trimStart, trimEnd, volume),
+  sfxReadFile: (filePath: string) => ipcRenderer.invoke('sfx:readFile', filePath),
+
   sep: process.platform === 'win32' ? '\\' : '/'
 }
 

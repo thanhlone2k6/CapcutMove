@@ -120,6 +120,7 @@ export default function Transcript(): React.JSX.Element {
   // Transcription config
   const [mediaFile, setMediaFile] = useState<MediaFileInfo | null>(null)
   const [language, setLanguage] = useState<string>('auto')
+  const [model, setModel] = useState<string>('base')
   const [outputFormat, setOutputFormat] = useState<'text' | 'srt'>('text')
 
   // Progress states
@@ -288,9 +289,20 @@ export default function Transcript(): React.JSX.Element {
         file.type.startsWith('audio/') ||
         /\.(mp4|mkv|avi|mov|mp3|wav|m4a|flac|ogg)$/i.test(file.name)
       if (isMedia) {
+        // Use Electron's webUtils.getPathForFile() — file.path is deprecated in Electron 32+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { webUtils } = (window as any).require?.('electron') ?? {}
+        const filePath: string =
+          webUtils?.getPathForFile(file) ||
+          (file as unknown as { path: string } & File).path ||
+          ''
+        if (!filePath) {
+          setErrorMsg('Không lấy được đường dẫn tệp. Hãy thử dùng nút chọn tệp thay vì kéo thả.')
+          return
+        }
         setMediaFile({
           name: file.name,
-          path: (file as unknown as { path: string } & File).path,
+          path: filePath,
           size: file.size
         })
         setErrorMsg('')
@@ -313,7 +325,7 @@ export default function Transcript(): React.JSX.Element {
     try {
       const res = await window.api.whisper.transcribe({
         mediaPath: mediaFile.path,
-        model: 'large-v2',
+        model,
         language
       })
       if (res.success && res.segments) {
@@ -464,6 +476,10 @@ export default function Transcript(): React.JSX.Element {
                   </div>
                 )}
                 <div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Mô hình</div>
+                  <span className="trs-info-badge">{model}</span>
+                </div>
+                <div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Ngôn ngữ</div>
                   <span className="trs-info-badge">
                     {language === 'auto' ? 'Auto detect' : (LANGUAGES_LIST.find((l) => l.code === language)?.name || language)}
@@ -511,6 +527,7 @@ export default function Transcript(): React.JSX.Element {
                   {mediaFile?.name}
                 </div>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                  <span className="trs-info-badge">{model}</span>
                   <span className="trs-info-badge">
                     {language === 'auto' ? 'Auto' : language}
                   </span>
@@ -617,6 +634,19 @@ export default function Transcript(): React.JSX.Element {
 
                 {/* Controls row */}
                 <div className="trs-controls-row">
+                  <div>
+                    <label className="trs-control-label">Mô hình AI</label>
+                    <select
+                      className="trs-select"
+                      value={model}
+                      onChange={(e) => setModel(e.target.value)}
+                    >
+                      <option value="base">base (~140MB - Nhanh)</option>
+                      <option value="small">small (~460MB - Khuyên dùng)</option>
+                      <option value="medium">medium (~1.5GB)</option>
+                      <option value="large-v2">large-v2 (~3GB)</option>
+                    </select>
+                  </div>
                   <div>
                     <label className="trs-control-label">Ngôn ngữ</label>
                     <select

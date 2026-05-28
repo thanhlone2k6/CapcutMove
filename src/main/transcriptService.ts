@@ -7,6 +7,7 @@ import https from 'https'
 import http from 'http'
 import unzipper from 'unzipper'
 import { saveSettings, getSettings } from './settingsService'
+import { ensureFfmpeg } from './videoDownloadService'
 
 export interface Segment {
   start: number // in seconds
@@ -66,17 +67,6 @@ export async function getSavedOrDetectedWhisperPath(): Promise<string | null> {
   return null
 }
 
-function getFfmpegPath(): string {
-  const localFfmpeg =
-    process.platform === 'win32'
-      ? path.join(app.getPath('userData'), 'binaries', 'ffmpeg.exe')
-      : path.join(app.getPath('userData'), 'binaries', 'ffmpeg')
-
-  if (fs.existsSync(localFfmpeg)) {
-    return localFfmpeg
-  }
-  return 'ffmpeg'
-}
 
 async function getMediaDuration(mediaPath: string, ffmpegPath: string): Promise<number> {
   return new Promise((resolve) => {
@@ -126,7 +116,11 @@ async function convertToWhisperWav(
       if (code === 0) {
         resolve()
       } else {
-        reject(new Error(`Chuyển đổi âm thanh thất bại (code ${code}): ${stderr}`))
+        if (stderr.includes('does not contain any stream')) {
+          reject(new Error('Tệp video/âm thanh này không chứa luồng âm thanh nào để nhận diện.'))
+        } else {
+          reject(new Error(`Chuyển đổi âm thanh thất bại (code ${code}): ${stderr}`))
+        }
       }
     })
   })
@@ -343,7 +337,7 @@ export function cancelTranscribe(): void {
 }
 
 function parseTimestampToSeconds(ts: string): number {
-  const parts = ts.split(':')
+  const parts = ts.replace(',', '.').split(':')
   if (parts.length === 3) {
     const hh = parseInt(parts[0], 10)
     const mm = parseInt(parts[1], 10)
@@ -425,21 +419,24 @@ export async function startTranscribe(
   sendProgress(0, undefined, 'initializing')
 
   const execPath = getExecPathForFolder(whisperPath)
-  const ffmpegPath = getFfmpegPath()
+  const ffmpegPath = await ensureFfmpeg()
 
   let workingFile = mediaPath
   let tempWavPath = ''
+  let tempInputPath = '' // For Windows: ASCII-safe copy of input file
 
-  if (process.platform === 'darwin') {
-    const tempDir = app.getPath('temp')
-    tempWavPath = path.join(tempDir, `whisper_temp_${crypto.randomUUID()}.wav`)
-    sendProgress(1, undefined, 'converting_audio')
-    try {
-      await convertToWhisperWav(mediaPath, tempWavPath, ffmpegPath)
-      workingFile = tempWavPath
-    } catch (err: unknown) {
-      throw new Error(`Lỗi chuyển đổi file âm thanh cho macOS: ${(err as Error).message}`)
-    }
+  // Luôn dùng ffmpeg convert sang WAV 16kHz cho tất cả các nền tảng:
+  // 1. Tránh lỗi PyAV (IndexError: tuple index out of range) với các file MP4 lạ
+  // 2. Fix triệt để lỗi path Unicode tiếng Việt trên Windows (do temp file dùng UUID ASCII)
+  // 3. Giúp Whisper chạy nhanh hơn vì không phải tự xử lý giải mã video
+  const tempDir = app.getPath('temp')
+  tempWavPath = path.join(tempDir, `whisper_temp_${crypto.randomUUID()}.wav`)
+  sendProgress(1, undefined, 'converting_audio')
+  try {
+    await convertToWhisperWav(mediaPath, tempWavPath, ffmpegPath)
+    workingFile = tempWavPath
+  } catch (err: unknown) {
+    throw new Error(`Lỗi trích xuất âm thanh: ${(err as Error).message}`)
   }
 
   let totalDuration = 0
@@ -455,8 +452,8 @@ export async function startTranscribe(
   const args: string[] = []
 
   if (process.platform === 'win32') {
+    // Faster-Whisper-XXL uses underscore args (--output_format, --output_dir)
     args.push(
-      workingFile,
       '--model',
       model,
       '--output_format',
@@ -467,6 +464,11 @@ export async function startTranscribe(
     if (language !== 'auto') {
       args.push('--language', language)
     }
+    // workingFile must be at the end to prevent argparse issues
+    args.push(workingFile)
+    console.log('[whisper] exec:', execPath)
+    console.log('[whisper] workingFile:', workingFile)
+    console.log('[whisper] outputDir:', outputDir)
   } else {
     let modelPath = path.join(whisperPath, `ggml-${model}.bin`)
     if (!fs.existsSync(modelPath)) {
@@ -512,11 +514,15 @@ export async function startTranscribe(
     })
     activeTranscribeProcess = child
 
+    const collectedLogs: string[] = []
+
     const handleLine = (data: Buffer): void => {
       const lines = data.toString().split(/\r?\n/)
       for (const line of lines) {
         const trimmed = line.trim()
         if (!trimmed) continue
+
+        collectedLogs.push(trimmed)
 
         // Send log line to renderer
         if (mainWindow && !mainWindow.isDestroyed()) {
@@ -559,9 +565,18 @@ export async function startTranscribe(
       if (tempWavPath) {
         fs.remove(tempWavPath).catch(() => {})
       }
+      if (tempInputPath) {
+        fs.remove(tempInputPath).catch(() => {})
+      }
 
       if (code !== 0 && code !== null) {
-        reject(new Error(`Tiến trình Whisper kết thúc với mã lỗi ${code}`))
+        // Collect last relevant log lines for the error message
+        const lastLogs = collectedLogs
+          .filter((l) => /error|fail|cuda|gpu|abort|exception|critical/i.test(l))
+          .slice(-3)
+          .join(' | ')
+        const detail = lastLogs ? ` (${lastLogs})` : ''
+        reject(new Error(`Tiến trình Whisper kết thúc với mã lỗi ${code}${detail}`))
         return
       }
 
@@ -593,6 +608,7 @@ export async function startTranscribe(
     child.on('error', (err) => {
       activeTranscribeProcess = null
       if (tempWavPath) fs.remove(tempWavPath).catch(() => {})
+      if (tempInputPath) fs.remove(tempInputPath).catch(() => {})
       reject(err)
     })
   })

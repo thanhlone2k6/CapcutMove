@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Download as DownloadIcon, FileText } from 'lucide-react'
+import { Download as DownloadIcon, FileText, Music } from 'lucide-react'
 import VideoDownloader from '../VideoDownloader'
 import Transcript from './Transcript'
+import SfxVault from './SfxVault'
 import VipGate from '../VipGate'
 
 interface VipToolsProps {
@@ -21,7 +22,7 @@ export default function VipTools({
   vipChecked,
   handleVipActivated
 }: VipToolsProps): React.JSX.Element {
-  const [vipSubTab, setVipSubTab] = useState<'download' | 'transcript'>('download')
+  const [vipSubTab, setVipSubTab] = useState<'download' | 'transcript' | 'sfx'>('download')
   const [downloadActiveCount, setDownloadActiveCount] = useState(0)
 
   return (
@@ -44,6 +45,13 @@ export default function VipTools({
         >
           <FileText size={14} />
           <span>Transcript</span>
+        </button>
+        <button
+          className={`vip-sub-tab ${vipSubTab === 'sfx' ? 'active' : ''}`}
+          onClick={() => setVipSubTab('sfx')}
+        >
+          <Music size={14} />
+          <span>Kho SFX</span>
         </button>
       </div>
 
@@ -88,6 +96,19 @@ export default function VipTools({
           }}
         >
           <Transcript />
+        </div>
+
+        <div
+          className={`vip-preview-layer ${!isVipActive ? 'locked' : ''}`}
+          style={{
+            display: vipSubTab === 'sfx' ? 'flex' : 'none',
+            height: '100%',
+            width: '100%',
+            minHeight: 0,
+            overflow: 'hidden'
+          }}
+        >
+          <SfxVault />
         </div>
 
         {/* Lock overlay — only when not activated */}

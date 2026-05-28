@@ -6,7 +6,7 @@
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: https: http:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http:;"
+      content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: https: http:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: http:;"
     />
     <script>
       if (typeof window !== 'undefined' && !window.api) {
@@ -55,7 +55,7 @@
           onProgress: () => () => {},
           copyToClipboard: () => {},
           openExternal: () => {},
-          getAppVersion: () => Promise.resolve('15.0.0'),
+          getAppVersion: () => Promise.resolve('16.0.0'),
           checkCapcutRunning: () => Promise.resolve(false),
           selectFolder: () => Promise.resolve(''),
           checkForUpdates: () => Promise.resolve(),

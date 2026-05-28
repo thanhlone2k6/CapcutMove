@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, protocol, Tray, Menu, nativeImage, globalShortcut, screen } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, protocol, Tray, Menu, nativeImage, globalShortcut, screen, net } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 // Define platform-specific icon paths
@@ -12,7 +12,6 @@ import { registerIpcHandlers } from './ipcHandlers'
 import { setupAutoUpdater } from './updateService'
 import { trackAppOpened, shutdownAnalytics } from './analytics'
 import { getSettings } from './settingsService'
-import fs from 'fs-extra'
 
 let mainWindow: BrowserWindow | null = null
 let popupWindow: BrowserWindow | null = null
@@ -228,6 +227,19 @@ function createWindow(): void {
   trackAppOpened()
 }
 
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'safe-file',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      bypassCSP: true,
+      stream: true
+    }
+  }
+])
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -241,14 +253,27 @@ app.whenReady().then(() => {
       let filePath = decodeURIComponent(url)
       filePath = filePath.split('?')[0]
 
-      if (/^\/[a-zA-Z]:\//.test(filePath)) {
+      if (/^\/?[a-zA-Z]\//.test(filePath)) {
+        if (filePath.startsWith('/')) {
+          filePath = filePath.substring(1)
+        }
+        filePath = filePath[0] + ':' + filePath.substring(1)
+      } else if (/^\/[a-zA-Z]:\//.test(filePath)) {
         filePath = filePath.substring(1)
       }
 
-      const data = await fs.readFile(filePath)
-      return new Response(data)
-    } catch (e) {
-      console.error('Safe-file protocol error:', e)
+      console.log('[safe-file] Request URL:', request.url)
+      console.log('[safe-file] Parsed path:', filePath)
+
+      const { pathToFileURL } = require('url')
+      const fileUrl = pathToFileURL(filePath).toString()
+      console.log('[safe-file] Fetching fileUrl:', fileUrl)
+
+      const response = await net.fetch(fileUrl)
+      console.log('[safe-file] Fetch success, status:', response.status)
+      return response
+    } catch (e: any) {
+      console.error('[safe-file] Safe-file protocol error:', e)
       return new Response('Not found', { status: 404 })
     }
   })
