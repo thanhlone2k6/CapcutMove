@@ -303,7 +303,340 @@ Hỗ trợ tổ chức thành **Groups** (nhóm), CRUD đầy đủ, bulk select
 }
 ```
 
-## 8. [VIP] Tab VIP — Bộ Công Cụ Cao Cấp
+## 8. Kiến trúc Giao diện & Tương tác UI Hiện tại (Current UI Architecture)
+
+### A. Cấu trúc Tab & Phân cấp (Tab Hierarchy)
+
+App được tổ chức theo **2 cấp menu** lồng nhau, toàn bộ điều hướng được quản lý bằng `useState` trong `App.tsx` — **không dùng thư viện Router**.
+
+#### Main Tab Bar (Cấp 1) — trong `App.tsx`
+
+```
+┌──────────────────────────────────────────┐
+│  ⚡ Free  │  🔒/⭐ VIP                   │
+└──────────────────────────────────────────┘
+```
+
+| Tab | Icon | Màu Inactive | Màu Active | State type |
+|-----|------|-------------|-----------|------------|
+| `Free` | `<Zap>` | muted | purple | `activeTab === 'free'` |
+| `VIP` | `<Lock>` (chưa kích hoạt) / `<Star>` (đã kích hoạt) | **`#d97706` amber** (luôn hiển thị) | **`#f59e0b` gold** | `activeTab === 'vip'` |
+
+> **Ghi chú kỹ thuật:** Tab VIP được fix cứng màu `#d97706` ở trạng thái inactive để tránh bị ẩn bởi màu `--text-muted`. Đây là một bản vá thiết kế có chủ ý trong `index.css`.
+
+#### Sub-Tab Bar Cấp 2 — Tab Free (trong `App.tsx`)
+
+```
+[❓ Hướng dẫn] | [Export Project] [Import Project] [Lưu nhanh] [Đóng Dấu]
+```
+
+| Sub-Tab | Component render | Loại |
+|---------|-----------------|------|
+| `Export Project` | `<ExportProject />` | Free |
+| `Import Project` | `<ImportProject />` | Free |
+| `Lưu nhanh` | `<QuickLinks />` | Free |
+| `Đóng Dấu` | `<BatchWatermark />` | Free |
+
+- State: `freeSubTab: 'export' | 'import' | 'quicklinks' | 'watermark'`
+- Nút **❓ Hướng dẫn** gọi thư viện `driver.js` để kích hoạt tour hướng dẫn tương tác bước-qua-bước cho tab `export` và `import`.
+
+#### Sub-Tab Bar Cấp 2 — Tab VIP (trong `VipTools/index.tsx`)
+
+```
+[⬇ Tải Video] [📄 Transcript] [🎵 Kho SFX]
+```
+
+| Sub-Tab | Component render | Loại |
+|---------|-----------------|------|
+| `Tải Video` | `<VideoDownloader />` | VIP |
+| `Transcript` | `<Transcript />` | VIP |
+| `Kho SFX` | `<SfxVault />` | VIP |
+
+- State: `vipSubTab: 'download' | 'transcript' | 'sfx'`
+- Badge số đếm task đang tải xuất hiện trên tab `Tải Video` khi `downloadActiveCount > 0`.
+
+---
+
+### B. Cơ chế Chuyển Tab (State Routing)
+
+App **không dùng React Router hay bất kỳ thư viện routing nào**. Toàn bộ điều hướng dựa trên **conditional rendering với `display: 'none' / 'block'`** — tức là **tất cả component luôn được mount**, chỉ ẩn/hiện bằng CSS:
+
+```tsx
+// App.tsx — cách render tab Free
+<div style={{ display: activeTab === 'free' ? 'flex' : 'none' }}>
+  ...
+</div>
+
+// App.tsx — cách render sub-tab
+<div style={{ display: freeSubTab === 'export' ? 'block' : 'none', height: '100%' }}>
+  <ExportProject settings={settings} onSettingsChange={setSettings} />
+</div>
+```
+
+**Hệ quả kỹ thuật quan trọng:**
+- ✅ Không mất state khi chuyển tab (ví dụ: task download vẫn chạy ngầm khi rời tab VIP).
+- ✅ `useEffect` tự động scan project ngay khi mount lần đầu (không cần nhấn nút).
+- ⚠️ Tất cả component được khởi tạo ngay từ đầu — tốt cho UX nhưng cần chú ý hiệu năng với component nặng.
+
+---
+
+### C. Bố cục Layout các Trang chính (Page Layout)
+
+#### 1. Trang Export Project (`ExportProject.tsx`) — Layout 2 cột
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Cột Trái (flex: 4.5) │ Cột Phải (flex: 5.5)            │
+│  ─────────────────────┼─────────────────────────────    │
+│  Card: 1. Settings    │ Card: Project Preview            │
+│   - CapCut Folder     │  [🔍 Search] [Sort ▾] [↻]       │
+│   - Output ZIP Folder │  ┌──────────────────────────┐   │
+│  ─────────────────────│  │ Grid 3 cột — ProjectCard │   │
+│  Card: 2. Status      │  │ [Thumb][Name][Size][Date] │   │
+│   - Alert valid/error │  │ [Badge status] [🗑 Xóa]   │   │
+│   - Summary Grid      │  └──────────────────────────┘   │
+│   - Warning thiếu file│  (scrollable, height: 100%)      │
+│  ─────────────────────│                                  │
+│  Card: 3. Export      │                                  │
+│   - [Export ZIP Btn]  │                                  │
+│   - ProgressBar       │                                  │
+│   - Cancel / Done     │                                  │
+└─────────────────────────────────────────────────────────┘
+```
+
+- **Project Grid** dùng CSS Grid 3 cột (`project-grid export-project-grid`).
+- Mỗi `project-card` hiển thị: thumbnail (ảnh bìa từ `safe-file://` protocol), tên, kích thước MB, ngày sửa đổi, badge trạng thái, nút xóa.
+- **Auto-flow khi chọn project:** Click card → `handleSelectProject()` → tự động gọi `checkProject()` → nếu valid tự động gọi `scanAssets()` → hiển thị kết quả ngay, không cần nút bổ sung.
+
+#### 2. Trang Import Project (`ImportProject.tsx`) — Layout 1 cột dọc
+
+```
+┌─────────────────────────────────────────┐
+│  Card: 1. Select ZIP Package            │
+│   - Text input path + [Browse ZIP]      │
+├─────────────────────────────────────────┤
+│  Card: 2. Target Folders                │
+│   - CapCut Folder input                 │
+│   - [Auto Detect] [Browse Folder]       │
+├─────────────────────────────────────────┤
+│  Card: 3. Experimental Settings         │
+│   - ☑ Patch media paths (checkbox)      │
+├─────────────────────────────────────────┤
+│  Card: 4. Import                        │
+│   - [Import Package] (btn-primary)      │
+│   - ProgressBar + Speed + Percent       │
+│   - Kết quả: newProjectPath / patchReport│
+└─────────────────────────────────────────┘
+```
+
+#### 3. Trang VideoDownloader (`VideoDownloader.tsx`) — Layout 2 cột
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Panel Trái (Settings)   │ Panel Phải (Download Area)   │
+│  ─────────────────────── │ ─────────────────────────── │
+│  - Format: MP4 / MP3     │ - URL input + clipboard watch│
+│  - Trạng thái yt-dlp     │ - [Chọn thư mục lưu]         │
+│    (loading/ready/error) │ - Task list chia 3 nhóm:     │
+│                          │   ▸ Đang tải (progress)      │
+│                          │   ▸ Hoàn thành               │
+│                          │   ▸ Lỗi                      │
+└─────────────────────────────────────────────────────────┘
+```
+
+- **Clipboard Watcher**: Tự động polling clipboard mỗi 1.5s để phát hiện link video. Hiển thị toast "Phát hiện link video, tải ngay không?".
+
+#### 4. Trang Đóng Dấu (`BatchWatermark.tsx`) — Layout 3 cột
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Cột Trái (flex:0.6)  │ Cột Giữa (flex:1.5) │ Cột Phải (flex:1.2)│
+│  Danh Sách Video      │ Khung Xem Trước      │ Cấu Hình Đóng Dấu │
+│  - Drag & Drop zone   │ - Video player       │ - Chọn Logo PNG    │
+│  - Danh sách video    │ - Logo overlay       │ - Slider opacity   │
+│  - Nút xóa từng file  │   (draggable +       │ - Vị trí X/Y debug │
+│  - Xóa tất cả         │    resizable corner) │ - Thư mục đầu ra   │
+│                       │                      │ - [Bắt đầu Đóng Dấu]│
+└──────────────────────────────────────────────────────────────┘
+```
+
+- **Interactive Logo Overlay**: Logo trên preview có thể kéo-thả (drag) và co giãn (resize) bằng chuột theo tọa độ phần trăm — tọa độ này được map sang pixel thực khi export bằng ffmpeg.
+
+#### 5. Tab VIP — Lock Overlay Mechanism (`VipTools/index.tsx`)
+
+```
+┌─────────────────────────────────────────┐
+│  Sub-tab bar: [Tải Video][Transcript][SFX] │
+├─────────────────────────────────────────┤
+│  VIP Content Area (position: relative)  │
+│                                         │
+│  ┌── vip-preview-layer.locked ─────┐   │
+│  │  VideoDownloader / Transcript / SfxVault │
+│  │  (blur filter áp dụng qua CSS)  │   │
+│  └────────────────────────────────┘   │
+│                                         │
+│  ┌── vip-lock-overlay (absolute) ──┐   │  ← chỉ render khi !isVipActive
+│  │        <VipGate />              │   │
+│  └────────────────────────────────┘   │
+└─────────────────────────────────────────┘
+```
+
+- `vip-preview-layer` luôn render content thật phía sau (để show blur preview).
+- `vip-lock-overlay` được đặt `position: absolute`, `z-index` cao hơn, phủ toàn bộ content area.
+- CSS class `.locked` áp dụng `filter: blur(...)` và `pointer-events: none` lên preview layer.
+- Trong khi `vipChecked === false` (chưa có kết quả từ IPC `license:check`): hiển thị spinner "Đang kiểm tra..." thay vì VipGate.
+
+---
+
+### D. Luồng Tương tác & Modal (User Flows)
+
+#### Luồng Export Project
+
+```
+Mở app
+  → Auto load settings → auto detect CapCut folder
+  → loadProjects(folder) → hiển thị grid card
+  → Click project card
+      → checkProject() → setCheckResult
+      → (nếu valid) scanAssets() → setScanResult
+  → Click [Export ZIP Package]
+      → Kiểm tra CapCut đang chạy?
+          → Có: mở ConflictModal "CapCut đang chạy"
+      → Kiểm tra file ZIP đã tồn tại?
+          → Có: mở ConflictModal "File export đã tồn tại"
+      → startExportProcess(zipPath)
+          → IPC exportZip → progress real-time
+          → Xong: hiển thị alert-success + [Open Folder] [Locate ZIP]
+```
+
+#### Luồng Import Project
+
+```
+Click [Browse ZIP Package] → selectZipFile()
+  → Click [Import Package]
+      → Kiểm tra CapCut đang chạy? → ConflictModal
+      → checkZipProject() → kiểm tra project đã tồn tại?
+          → Có: ConflictModal "Project đã tồn tại"
+              → Overwrite: xóa cũ → startImport(tên cũ)
+              → Auto rename: getAvailableName() → startImport(tên mới)
+      → startImport(finalName)
+          → IPC importPackage → progress real-time
+          → Xong: openCapcut() tự động mở CapCut
+          → Hiển thị patchReport (nếu patchPaths=true)
+```
+
+#### Luồng VIP Activation
+
+```
+Click Tab VIP
+  → App.tsx: license.check() → isVipActive
+      → false: render VipGate overlay (blurred content phía sau)
+      → true: hiển thị nội dung VIP đầy đủ
+  → Nhập License Key → [Kích hoạt]
+      → license.activate(key) → SHA-256 validation (offline)
+          → Success: hiển thị "🎉 Kích hoạt thành công!"
+              → setTimeout 1.2s → onActivated()
+              → App: setIsVipActive(true)
+              → Toast "VIP đang hoạt động ✓" hiện 3s rồi tự ẩn
+          → Fail: hiển thị error inline
+```
+
+#### Luồng Popup QuickLinks (Alt+Q)
+
+```
+User nhấn Alt+Q (bất kỳ đâu trên máy)
+  → Main Process: globalShortcut trigger
+  → Nếu popup đang ẩn:
+      → popup.show() tại vị trí con trỏ chuột
+  → Nếu popup đang hiện:
+      → popup.hide()
+  → Popup UI (BrowserWindow riêng, frameless, alwaysOnTop):
+      → PopupApp.tsx: load quickLinksGet()
+      → Danh sách Groups với accordion expand/collapse
+      → Click item → quickLinksOpen({type, path})
+      → Mất focus → setTimeout 600ms → popup.hide()
+```
+
+#### Modal ConflictModal
+
+`ConflictModal.tsx` là modal dùng chung cho nhiều tình huống xung đột:
+- **File ZIP đã tồn tại** (export): [Ghi đè] / [Đổi tên] / [Hủy]
+- **Project đã tồn tại** (import): [Ghi đè] / [Đổi tên] / [Hủy]
+- **CapCut đang chạy**: [Đóng CapCut & Tiếp tục] / [Tiếp tục (không khuyến nghị)]
+- **Xác nhận xóa project**: [Xác nhận xóa] / [Hủy] (ẩn nút Đổi tên)
+
+Render bằng `modal-overlay` với `z-index: 2000`, click backdrop → đóng.
+
+---
+
+### E. Widget & Element Ghim Cố định (Pinned Elements)
+
+#### CreatorWidget (`components/CreatorWidget.tsx`)
+
+- Vị trí: ghim **góc phải màn hình** — container `branding-container` trong `App.tsx`.
+- Nội dung: Facebook (link), Instagram (link), Zalo (copy số điện thoại + toast xác nhận), Donate/Coffee (mở `SupportModal`).
+- Có **nút thu gọn** (`ChevronLeft`) để ẩn toàn bộ widget — animation `max-height + opacity transition 0.5s cubic-bezier`.
+
+#### UpdateWidget (`components/UpdateWidget.tsx`)
+
+- Vị trí: render ngay trên nội dung chính, bên trong `main-content`.
+- Hiển thị thông báo có bản cập nhật mới và nút check thủ công.
+
+#### Update Blocking Screen
+
+Khi `updateStatus` là `'available' | 'downloading' | 'downloaded'`, `App.tsx` **early return** toàn bộ app bằng màn hình block update:
+```
+┌──────────────────────────────────┐
+│   ⬆ (icon spin khi đang tải)    │
+│   Phát Hiện Bản Cập Nhật Mới!   │
+│   v{version} đang được tải...   │
+│   ████████░░░░░  70%  1.2MB/s   │
+│   [↺ Khởi động lại để Cập nhật] │
+└──────────────────────────────────┘
+```
+
+#### Loading Splash Screen
+
+Khi `settings === null` (chưa load xong), app hiển thị `scanning-overlay` với spinner. Đây là trạng thái tạm thời trước khi React render giao diện chính.
+
+---
+
+### F. Hệ thống Design Token & CSS
+
+Toàn bộ màu sắc và style được định nghĩa qua **CSS Custom Properties** trong `index.css`:
+
+```css
+/* Màu nền */
+--bg-main: ...         /* nền tối chính */
+--bg-card: ...         /* card glassmorphism */
+
+/* Màu chữ */
+--text-primary: ...    /* chữ sáng nhất */
+--text-secondary: ...  /* chữ phụ */
+--text-muted: ...      /* chữ mờ */
+
+/* Accent colors */
+--accent-purple: ...           /* màu chủ đạo (tab Free, btn-primary) */
+--accent-purple-hover: ...
+--accent-gradient: ...         /* gradient purple-blue */
+
+/* Trạng thái */
+--success: ...   /* xanh lá */
+--warning: ...   /* vàng */
+--danger: ...    /* đỏ */
+
+/* VIP — hardcode trong CSS selector để đảm bảo hiển thị */
+.app-tab-btn-vip { color: #d97706 }        /* inactive amber */
+.app-tab-btn-vip.active { color: #f59e0b } /* active gold */
+```
+
+**Thiết kế phong cách:**
+- **Dark Mode** làm nền tảng, không có light mode.
+- **Glassmorphism**: `backdrop-filter: blur(...)` + `background: rgba(...)` + viền `rgba(255,255,255,0.08)`.
+- **Micro-animations**: Hover transitions `0.2s`, tab switch instant (CSS display), spinner `spin` keyframe cho icon RefreshCw/ArrowUpCircle.
+- **Scrollbar tùy chỉnh**: Định nghĩa `::-webkit-scrollbar` toàn cục cho giao diện Electron Chromium.
+
+## 9. [VIP] Tab VIP — Bộ Công Cụ Cao Cấp
 
 Tab VIP chứa các tính năng tải video và transcript dành riêng cho người dùng có License Key. Gồm 2 sub-tab: `Tải Video` (VideoDownloader) và `Transcript`.
 

@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "Douyin Video Downloader",
+  "version": "1.0",
+  "description": "Chrome Extension side panel to catch Douyin videos containing '?a=' and download them.",
+  "permissions": [
+    "webRequest",
+    "sidePanel",
+    "downloads",
+    "storage"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "sidebar.html"
+  },
+  "action": {
+    "default_title": "Open Douyin Downloader",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

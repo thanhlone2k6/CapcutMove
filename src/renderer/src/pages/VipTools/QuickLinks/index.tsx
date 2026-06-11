@@ -1566,16 +1566,25 @@ export default function QuickLinks(): React.JSX.Element {
             style={{
               display: 'flex',
               alignItems: 'center',
-              background: 'var(--bg-surface)',
-              border: '1px solid var(--border)',
-              borderRadius: '10px',
-              padding: '6px 14px',
+              background: 'rgba(255, 255, 255, 0.02)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '12px',
+              padding: '8px 16px',
               width: '100%',
               boxSizing: 'border-box',
-              height: '42px',
-              transition: 'var(--transition)'
+              height: '48px',
+              transition: 'all 0.3s ease',
+              boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.2)'
             }}
             className="quick-input-wrapper"
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+            }}
           >
             <Plus size={16} style={{ color: 'var(--text-secondary)', marginRight: '8px', flexShrink: 0 }} />
             <input
@@ -1636,18 +1645,19 @@ export default function QuickLinks(): React.JSX.Element {
             <div
               style={{
                 position: 'absolute',
-                top: '48px',
+                top: '56px',
                 right: 0,
                 width: '100%',
-                background: 'var(--bg-surface)',
-                border: '1px solid var(--border)',
-                borderRadius: '12px',
-                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
-                padding: '16px',
+                background: 'rgba(28, 28, 33, 0.95)',
+                backdropFilter: 'blur(24px)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '14px',
+                boxShadow: '0 15px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.05)',
+                padding: '20px',
                 zIndex: 999,
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '12px',
+                gap: '16px',
                 boxSizing: 'border-box'
               }}
               className="quick-add-panel"
@@ -1833,21 +1843,37 @@ export default function QuickLinks(): React.JSX.Element {
                   })
                 }}
                 style={{
-                  background: colorInfo.bg,
+                  background: `linear-gradient(135deg, ${colorInfo.bg} 0%, rgba(20,20,25,0.4) 100%)`,
                   border: isSelectionMode && isSelected 
                     ? `2px solid ${colorInfo.border}` 
-                    : `1px solid ${colorInfo.border}`,
-                  borderRadius: '12px',
-                  padding: isSelectionMode && isSelected ? '15px' : '16px', // adjust for border width difference
+                    : `1px solid ${colorInfo.border}40`, /* Semi-transparent border */
+                  borderRadius: '14px',
+                  padding: isSelectionMode && isSelected ? '15px' : '16px',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   width: '100%',
                   boxSizing: 'border-box',
                   breakInside: 'avoid',
                   display: 'inline-block',
-                  marginBottom: '16px'
+                  marginBottom: '16px',
+                  boxShadow: `0 4px 20px ${colorInfo.glow}00`,
+                  backdropFilter: 'blur(10px)'
                 }}
                 className="quicklink-card"
+                onMouseEnter={(e) => {
+                  if (!isSelectionMode) {
+                    e.currentTarget.style.transform = 'translateY(-3px)';
+                    e.currentTarget.style.boxShadow = `0 8px 25px ${colorInfo.glow}`;
+                    e.currentTarget.style.borderColor = colorInfo.border;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelectionMode) {
+                    e.currentTarget.style.transform = 'none';
+                    e.currentTarget.style.boxShadow = `0 4px 20px ${colorInfo.glow}00`;
+                    e.currentTarget.style.borderColor = `${colorInfo.border}40`;
+                  }
+                }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1862,23 +1888,26 @@ export default function QuickLinks(): React.JSX.Element {
                         {isSelected ? <CheckSquare size={16} /> : <Square size={16} />}
                       </span>
                     )}
-                    <span style={{ fontSize: '14px', fontWeight: 600, color: colorInfo.text }}>
+                    <span style={{ display: 'flex', color: colorInfo.text, padding: '6px', background: `${colorInfo.glow}`, borderRadius: '8px' }}>
+                      <Folder size={16} />
+                    </span>
+                    <span style={{ fontSize: '15px', fontWeight: 600, color: '#f8f8f8' }}>
                       {group.name}
                     </span>
-                    <span
-                      style={{
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        padding: '2px 8px',
-                        borderRadius: '12px',
-                        background: 'rgba(255,255,255,0.04)',
-                        border: '1px solid var(--border)',
-                        color: 'var(--text-secondary)'
-                      }}
-                    >
-                      {group.items.length} liên kết
-                    </span>
                   </div>
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      padding: '4px 10px',
+                      borderRadius: '12px',
+                      background: 'rgba(255,255,255,0.06)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      color: 'var(--text-secondary)'
+                    }}
+                  >
+                    {group.items.length} liên kết
+                  </span>
                 </div>
               </div>
             )
@@ -1897,7 +1926,19 @@ export default function QuickLinks(): React.JSX.Element {
             setIsEditingName(false)
           }}
         >
-          <div className="ql-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="ql-modal" onClick={(e) => e.stopPropagation()} style={{
+            background: 'var(--bg-surface-elevated)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '20px',
+            width: '90%',
+            maxWidth: '600px',
+            maxHeight: '85vh',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+            backdropFilter: 'blur(20px)',
+            overflow: 'hidden'
+          }}>
             <div
               style={{
                 display: 'flex',
@@ -2058,13 +2099,26 @@ export default function QuickLinks(): React.JSX.Element {
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
-                          background: 'rgba(255, 255, 255, 0.01)',
-                          border: '1px solid var(--border)',
-                          borderRadius: '10px',
-                          padding: '10px 14px',
-                          transition: 'all 0.2s ease'
+                          background: 'rgba(255, 255, 255, 0.02)',
+                          border: '1px solid rgba(255, 255, 255, 0.05)',
+                          borderRadius: '12px',
+                          padding: '12px 16px',
+                          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                          flexShrink: 0
                         }}
                         className="quicklink-item-row"
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'
+                          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'
+                          e.currentTarget.style.transform = 'translateY(-1px)'
+                          e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.2)'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)'
+                          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.05)'
+                          e.currentTarget.style.transform = 'none'
+                          e.currentTarget.style.boxShadow = 'none'
+                        }}
                       >
                         {isEditing ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>

@@ -45,8 +45,14 @@ function formatBytes(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
 }
 
+function extractUrl(str: string): string | null {
+  if (!str) return null
+  const match = str.match(/(https?:\/\/[^\s]+)/i)
+  return match ? match[1] : null
+}
+
 function isValidUrl(str: string): boolean {
-  return /^https?:\/\/.+/i.test(str.trim())
+  return extractUrl(str) !== null
 }
 
 function getThumbnailUrl(url: string): string | null {
@@ -318,14 +324,14 @@ export default function VideoDownloader({
     const checkClipboard = async (): Promise<void> => {
       try {
         const text = await window.api.readClipboard()
+        const extracted = extractUrl(text)
         if (
-          text &&
-          text !== lastClipboardUrl.current &&
-          isValidUrl(text) &&
-          !dismissedUrls.current.has(text)
+          extracted &&
+          extracted !== lastClipboardUrl.current &&
+          !dismissedUrls.current.has(extracted)
         ) {
-          lastClipboardUrl.current = text
-          setClipboardToast(text)
+          lastClipboardUrl.current = extracted
+          setClipboardToast(extracted)
         }
       } catch {
         // ignore
@@ -343,7 +349,8 @@ export default function VideoDownloader({
 
   const startDownload = useCallback(
     async (url: string) => {
-      if (!isValidUrl(url)) return
+      const extracted = extractUrl(url)
+      if (!extracted) return
 
       let dir = outputDir
       if (!dir) {
@@ -356,7 +363,7 @@ export default function VideoDownloader({
       }
 
       try {
-        await window.api.download.start({ url: url.trim(), outputDir: dir, mode })
+        await window.api.download.start({ url: extracted, outputDir: dir, mode })
       } catch (err) {
         console.error('Failed to start download:', err)
       }
@@ -367,9 +374,10 @@ export default function VideoDownloader({
   const handlePaste = useCallback(
     (e: React.ClipboardEvent) => {
       const pastedText = e.clipboardData.getData('text')
-      if (isValidUrl(pastedText)) {
+      const extracted = extractUrl(pastedText)
+      if (extracted) {
         e.preventDefault()
-        startDownload(pastedText)
+        startDownload(extracted)
         setUrlInput('')
       }
     },
@@ -379,12 +387,11 @@ export default function VideoDownloader({
   const handlePasteFromClipboard = async (): Promise<void> => {
     try {
       const text = await window.api.readClipboard()
-      if (text && text.trim()) {
-        setUrlInput(text.trim())
-        if (isValidUrl(text)) {
-          startDownload(text)
-          setUrlInput('')
-        }
+      const extracted = extractUrl(text)
+      if (extracted) {
+        setUrlInput(extracted)
+        startDownload(extracted)
+        setUrlInput('')
       }
     } catch (err) {
       console.error('Failed to read clipboard:', err)

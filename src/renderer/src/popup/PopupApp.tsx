@@ -141,6 +141,28 @@ const getItemIcon = (item: QuickLinkItem, size = 14) => {
   return <LinkIcon size={size} />
 }
 
+const CARD_COLORS = [
+  { border: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.04)', glow: 'rgba(139, 92, 246, 0.15)', text: '#c084fc' }, // Purple
+  { border: '#3b82f6', bg: 'rgba(59, 130, 246, 0.04)', glow: 'rgba(59, 130, 246, 0.15)', text: '#60a5fa' }, // Blue
+  { border: '#10b981', bg: 'rgba(16, 185, 129, 0.04)', glow: 'rgba(16, 185, 129, 0.15)', text: '#34d399' }, // Emerald
+  { border: '#ec4899', bg: 'rgba(236, 72, 153, 0.04)', glow: 'rgba(236, 72, 153, 0.15)', text: '#f472b6' }, // Pink
+  { border: '#f59e0b', bg: 'rgba(245, 158, 11, 0.04)', glow: 'rgba(245, 158, 11, 0.15)', text: '#fbbf24' }, // Amber
+  { border: '#06b6d4', bg: 'rgba(6, 182, 212, 0.04)', glow: 'rgba(6, 182, 212, 0.15)', text: '#22d3ee' }, // Cyan
+  { border: '#a855f7', bg: 'rgba(168, 85, 247, 0.04)', glow: 'rgba(168, 85, 247, 0.15)', text: '#c084fc' }, // Violet
+  { border: '#f43f5e', bg: 'rgba(244, 63, 94, 0.04)', glow: 'rgba(244, 63, 94, 0.15)', text: '#fb7185' }, // Rose
+  { border: '#14b8a6', bg: 'rgba(20, 184, 166, 0.04)', glow: 'rgba(20, 184, 166, 0.15)', text: '#2dd4bf' }, // Teal
+  { border: '#84cc16', bg: 'rgba(132, 204, 22, 0.04)', glow: 'rgba(132, 204, 22, 0.15)', text: '#a3e635' }  // Lime
+]
+
+const getCardColor = (id: string) => {
+  let hash = 0
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  const index = Math.abs(hash) % CARD_COLORS.length
+  return CARD_COLORS[index]
+}
+
 export default function PopupApp(): React.JSX.Element {
   const [groups, setGroups] = useState<QuickLinkGroup[]>([])
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null)
@@ -160,30 +182,16 @@ export default function PopupApp(): React.JSX.Element {
   }
 
   return (
-    <div
-      style={{
-        width: '100vw',
-        height: '100vh',
-        background: 'rgba(20, 20, 25, 0.75)',
-        backdropFilter: 'blur(16px)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        borderRadius: '12px',
-        boxShadow: '0 12px 36px rgba(0, 0, 0, 0.6)',
-        display: 'flex',
-        flexDirection: 'column',
-        boxSizing: 'border-box',
-        overflow: 'hidden'
-      }}
-    >
-      {/* Title / Header */}
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#0f0f13', overflow: 'hidden' }}>
       <div
         style={{
           display: 'flex',
-          justifyContent: 'space-between',
           alignItems: 'center',
+          justifyContent: 'space-between',
           padding: '12px 14px',
           borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-          background: 'rgba(255, 255, 255, 0.02)'
+          background: 'rgba(255, 255, 255, 0.02)',
+          flexShrink: 0
         }}
       >
         <span style={{ fontSize: '13px', fontWeight: 700, color: '#f8f8f8', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -199,10 +207,10 @@ export default function PopupApp(): React.JSX.Element {
         style={{
           flex: 1,
           overflowY: 'auto',
-          padding: '8px 10px',
+          padding: '10px 12px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '6px'
+          gap: '8px'
         }}
         className="quicklinks-scroll-container"
       >
@@ -225,16 +233,26 @@ export default function PopupApp(): React.JSX.Element {
         ) : (
           groups.map((group) => {
             const isExpanded = expandedGroupId === group.id
+            const colorInfo = getCardColor(group.id)
             return (
               <div
                 key={group.id}
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
-                  background: 'rgba(255, 255, 255, 0.01)',
-                  border: '1px solid rgba(255, 255, 255, 0.04)',
-                  borderRadius: '8px',
-                  overflow: 'hidden'
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  borderRadius: '10px',
+                  flexShrink: 0,
+                  transition: 'background 0.2s ease, border-color 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.06)';
                 }}
               >
                 {/* Group Header Button */}
@@ -262,26 +280,47 @@ export default function PopupApp(): React.JSX.Element {
                   }}
                 >
                   <span style={{ fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Folder size={14} style={{ color: 'var(--accent-purple-hover)' }} />
-                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '170px' }}>
+                    <span style={{ display: 'flex', color: colorInfo.text }}>
+                      <Folder size={16} />
+                    </span>
+                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '140px' }}>
                       {group.name}
                     </span>
                   </span>
-                  <span style={{ color: 'rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center' }}>
-                    {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                  </span>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        fontWeight: 600,
+                        padding: '2px 8px',
+                        borderRadius: '12px',
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        color: 'rgba(255, 255, 255, 0.5)'
+                      }}
+                    >
+                      {group.items.length} liên kết
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center' }}>
+                      {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    </span>
+                  </div>
                 </button>
 
                 {/* Expanded items list */}
                 {isExpanded && (
                   <div
                     style={{
-                      background: 'rgba(0, 0, 0, 0.15)',
-                      padding: '4px 8px 8px 8px',
+                      background: 'rgba(0, 0, 0, 0.25)',
+                      padding: '6px 8px 8px 8px',
                       display: 'flex',
                       flexDirection: 'column',
                       gap: '4px',
-                      borderTop: '1px solid rgba(255, 255, 255, 0.02)'
+                      borderTop: '1px solid rgba(255, 255, 255, 0.03)',
+                      boxShadow: 'inset 0 2px 10px rgba(0, 0, 0, 0.2)',
+                      borderBottomLeftRadius: '10px',
+                      borderBottomRightRadius: '10px'
                     }}
                   >
                     {group.items.length === 0 ? (
@@ -304,30 +343,35 @@ export default function PopupApp(): React.JSX.Element {
                             display: 'flex',
                             alignItems: 'center',
                             gap: '8px',
-                            padding: '8px 10px',
-                            background: 'rgba(255, 255, 255, 0.02)',
-                            border: '1px solid rgba(255, 255, 255, 0.03)',
-                            borderRadius: '6px',
+                            padding: '10px 12px',
+                            background: 'rgba(255, 255, 255, 0.03)',
+                            border: '1px solid rgba(255, 255, 255, 0.04)',
+                            borderRadius: '8px',
                             cursor: 'pointer',
-                            color: 'rgba(255, 255, 255, 0.85)',
+                            color: 'rgba(255, 255, 255, 0.9)',
                             textAlign: 'left',
                             width: '100%',
                             outline: 'none',
-                            transition: 'all 0.15s ease'
+                            flexShrink: 0,
+                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'
+                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'
+                            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)'
+                            e.currentTarget.style.transform = 'translateY(-1px)'
                             e.currentTarget.style.color = '#fff'
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)'
-                            e.currentTarget.style.color = 'rgba(255, 255, 255, 0.85)'
+                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)'
+                            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.04)'
+                            e.currentTarget.style.transform = 'none'
+                            e.currentTarget.style.color = 'rgba(255, 255, 255, 0.9)'
                           }}
                         >
                           <span
                             style={{
                               display: 'flex',
-                              color: item.type === 'folder' ? 'var(--accent-purple-hover)' : item.type === 'link' ? '#60a5fa' : '#34d399',
+                              color: item.type === 'folder' ? colorInfo.text : item.type === 'link' ? '#60a5fa' : '#34d399',
                               flexShrink: 0
                             }}
                           >

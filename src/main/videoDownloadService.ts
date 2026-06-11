@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, session } from 'electron'
 import { spawn, ChildProcess } from 'child_process'
 import path from 'path'
 import fs from 'fs-extra'
@@ -231,6 +231,172 @@ function checkFfmpeg(): { available: boolean; localWorks: boolean } {
   }
 }
 
+async function getDouyinDirectUrl(url: string): Promise<{url: string, title?: string, thumbnail?: string}> {
+  return new Promise((resolve, reject) => {
+    const hiddenWin = new BrowserWindow({
+      show: false,
+      width: 1920,
+      height: 1080,
+      webPreferences: {
+        partition: 'persist:douyin',
+        javascript: true,
+        backgroundThrottling: false
+      }
+    })
+
+    // Mute audio to allow autoplay without user gesture
+    hiddenWin.webContents.setAudioMuted(true)
+    hiddenWin.webContents.userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+
+    // Block any external protocols (like bitbrowser:// or snssdk://) to prevent OS popups
+    hiddenWin.webContents.session.webRequest.onBeforeRequest({ urls: ['<all_urls>'] }, (details, callback) => {
+      if (!details.url.startsWith('http://') && !details.url.startsWith('https://') && !details.url.startsWith('devtools://')) {
+        callback({ cancel: true })
+      } else {
+        callback({})
+      }
+    })
+
+    hiddenWin.webContents.setWindowOpenHandler(() => {
+      return { action: 'deny' }
+    })
+
+    // Deny openExternal permission to stop bitbrowser:// popup
+    hiddenWin.webContents.session.setPermissionRequestHandler((wc, permission, callback) => {
+      if (permission === 'openExternal') {
+        callback(false)
+      } else {
+        callback(false)
+      }
+    })
+
+    // Intercept navigations directly to block custom protocols
+    hiddenWin.webContents.on('will-navigate', (e, navUrl) => {
+      if (!navUrl.startsWith('http://') && !navUrl.startsWith('https://')) {
+        e.preventDefault()
+      }
+    })
+    
+    // Intercept iframe navigations as well
+    hiddenWin.webContents.on('will-frame-navigate', (e) => {
+      if (!e.url.startsWith('http://') && !e.url.startsWith('https://')) {
+        e.preventDefault()
+      }
+    })
+
+    let caughtUrl: string | null = null
+    const filter = { urls: ['<all_urls>'] }
+    
+    const urlPromise = new Promise<string>((res, rej) => {
+       hiddenWin.webContents.session.webRequest.onResponseStarted(filter, (details) => {
+         if (details.method === 'GET' && details.url.includes('?a=')) {
+           if (!caughtUrl) {
+             caughtUrl = details.url
+             console.log('[Douyin] Caught direct video URL:', caughtUrl)
+             hiddenWin.webContents.session.webRequest.onResponseStarted(filter, null)
+             res(caughtUrl)
+           }
+         }
+       })
+       // Timeout for URL
+       setTimeout(() => {
+          if (!caughtUrl) rej(new Error('Timeout: Không thể trích xuất link video từ Douyin (quá 20 giây)'))
+       }, 20000)
+    })
+
+    const metaPromise = new Promise<{title: string, poster: string}>((res) => {
+       let resolved = false
+       
+       const checkMeta = async () => {
+         if (resolved || hiddenWin.isDestroyed()) return
+         try {
+            const meta = await hiddenWin.webContents.executeJavaScript(`
+              (function() {
+                let title = document.title || '';
+                if (title.includes(' - 抖音')) title = title.replace(' - 抖音', '');
+                let poster = '';
+                
+                // Try to find cover in RENDER_DATA
+                try {
+                  const el = document.getElementById('RENDER_DATA');
+                  if (el) {
+                     const data = JSON.parse(decodeURIComponent(el.innerText));
+                     function findCover(obj) {
+                        if (!obj || typeof obj !== 'object') return null;
+                        if (obj.cover && obj.cover.url_list && obj.cover.url_list.length > 0) return obj.cover.url_list[0];
+                        if (obj.video && obj.video.cover && obj.video.cover.url_list) return obj.video.cover.url_list[0];
+                        for (const key in obj) {
+                           if (typeof obj[key] === 'object') {
+                              const res = findCover(obj[key]);
+                              if (res) return res;
+                           }
+                        }
+                        return null;
+                     }
+                     poster = findCover(data) || '';
+                  }
+                } catch(e) {}
+                
+                if (!poster) {
+                   const video = document.querySelector('video');
+                   if (video && video.poster) {
+                      poster = video.poster;
+                   }
+                }
+                
+                // Return null if title is still just the URL or hash
+                if (title && (title.length > 50 || title.includes('http') || title === 'Douyin Video' || !title.trim())) {
+                   return null; // Not ready
+                }
+                
+                return { title, poster };
+              })()
+            `)
+            
+            if (meta) {
+               resolved = true
+               res(meta)
+            }
+         } catch (e) {
+            // ignore
+         }
+       }
+
+       // Start polling once did-finish-load or dom-ready is fired
+       hiddenWin.webContents.on('did-finish-load', () => {
+          const interval = setInterval(() => {
+             if (resolved || hiddenWin.isDestroyed()) {
+                clearInterval(interval)
+                return
+             }
+             checkMeta()
+          }, 500)
+          
+          // Max wait for meta is 5 seconds after load
+          setTimeout(() => {
+             clearInterval(interval)
+             if (!resolved) {
+                resolved = true
+                res({ title: 'Video Douyin', poster: '' })
+             }
+          }, 5000)
+       })
+    })
+
+    hiddenWin.loadURL(url).catch((err) => {
+      console.error('[Douyin] Failed to load URL in hidden window', err)
+    })
+
+    Promise.all([urlPromise, metaPromise]).then(([url, meta]) => {
+       if (!hiddenWin.isDestroyed()) hiddenWin.close()
+       resolve({ url, title: meta.title, thumbnail: meta.poster })
+    }).catch(err => {
+       if (!hiddenWin.isDestroyed()) hiddenWin.close()
+       reject(err)
+    })
+  })
+}
+
 export async function startDownload(
   mainWindow: BrowserWindow,
   url: string,
@@ -251,30 +417,54 @@ export async function startDownload(
   }
   tasks.set(id, task)
 
+  let finalUrl = url
+  if (url.includes('douyin.com')) {
+    try {
+      console.log(`[videoDownloadService] Fetching direct URL for Douyin...`)
+      task.title = 'Đang trích xuất link gốc...'
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('download:progress', { ...task })
+      }
+      
+      const douyinData = await getDouyinDirectUrl(url)
+      finalUrl = douyinData.url
+      if (douyinData.title) {
+         task.title = douyinData.title
+      } else {
+         task.title = 'Video Douyin'
+      }
+      if (douyinData.thumbnail) {
+         task.thumbnailUrl = douyinData.thumbnail
+      }
+      
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('download:progress', { ...task })
+      }
+      console.log(`[videoDownloadService] Douyin direct URL fetched successfully!`)
+    } catch (err) {
+      console.error(`[videoDownloadService] Failed to get Douyin direct URL:`, err)
+    }
+  }
+
   const { available: ffmpegAvailable, localWorks: localFfmpegWorks } = checkFfmpeg()
   console.log(
     `[videoDownloadService] ffmpeg available: ${ffmpegAvailable}, local: ${localFfmpegWorks}`
   )
 
   const outputTemplate = path.join(outputDir, '%(title)s_%(epoch)s.%(ext)s')
-  const args: string[] = [url]
+  const args: string[] = [finalUrl]
 
   // Add format selectors
   if (mode === 'audio') {
     if (ffmpegAvailable) {
       args.push('-x', '--audio-format', 'mp3', '--audio-quality', '0')
     } else {
-      // Fallback: best direct audio format when ffmpeg is missing
       args.push('-f', 'ba[ext=m4a]/ba')
     }
   } else {
     if (ffmpegAvailable) {
-      // Let ffmpeg handle remuxing to mp4 from any container — no ext constraint
-      // so we always get best quality regardless of source format
       args.push('-f', 'bestvideo+bestaudio/best', '--merge-output-format', 'mp4')
     } else {
-      // Fallback: best pre-merged stream that has a video track (vcodec!=none prevents
-      // accidentally selecting audio-only streams that happen to have mp4 container)
       args.push('-f', 'best[vcodec!=none][ext=mp4]/best[vcodec!=none]/best')
     }
   }
@@ -293,9 +483,6 @@ export async function startDownload(
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
   )
 
-  // Only point yt-dlp to the local ffmpeg if it can actually execute.
-  // If the local binary is quarantined (macOS) or wrong arch, skip this so
-  // yt-dlp can fall back to whatever is on the system PATH instead.
   if (localFfmpegWorks) {
     args.push('--ffmpeg-location', getBinariesDir())
   }
@@ -307,6 +494,9 @@ export async function startDownload(
     args.push('--referer', 'https://www.instagram.com/')
   } else if (url.includes('facebook.com')) {
     args.push('--referer', 'https://www.facebook.com/')
+  } else if (finalUrl.includes('?a=')) {
+    // For Douyin direct URLs, set Douyin referer
+    args.push('--referer', 'https://www.douyin.com/')
   }
 
   const child = spawn(ytDlpPath, args, {
