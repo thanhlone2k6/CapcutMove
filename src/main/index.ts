@@ -12,6 +12,7 @@ import { registerIpcHandlers } from './ipcHandlers'
 import { setupAutoUpdater } from './updateService'
 import { trackAppOpened, shutdownAnalytics } from './analytics'
 import { getSettings } from './settingsService'
+import { initPastePngService } from './pastePngService'
 
 let mainWindow: BrowserWindow | null = null
 let popupWindow: BrowserWindow | null = null
@@ -225,6 +226,9 @@ function createWindow(): void {
 
   // Track app opened event
   trackAppOpened()
+
+  // Initialize Paste PNG Service
+  initPastePngService()
 }
 
 protocol.registerSchemesAsPrivileged([

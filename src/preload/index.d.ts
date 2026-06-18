@@ -198,6 +198,16 @@ export interface API {
   sfxEditFile: (groupId: string, fileId: string, trimStart: number, trimEnd: number, volume: number) => Promise<SfxGroup[]>
   sfxReadFile: (filePath: string) => Promise<ArrayBuffer>
 
+  // Paste PNG APIs
+  pastePng: {
+    getSettings: () => Promise<{ enabled: boolean; shortcut: string }>
+    setEnabled: (enabled: boolean) => Promise<boolean>
+    setShortcut: (shortcut: string) => Promise<boolean>
+    pasteNow: () => Promise<void>
+    onSuccess: (callback: (filePath: string) => void) => () => void
+    onError: (callback: (msg: string) => void) => () => void
+  }
+
   sep: string
 }
 

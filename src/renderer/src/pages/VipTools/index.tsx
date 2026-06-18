@@ -3,6 +3,7 @@ import { Download as DownloadIcon, FileText, Music } from 'lucide-react'
 import VideoDownloader from '../VideoDownloader'
 import Transcript from './Transcript'
 import SfxVault from './SfxVault'
+import PastePngTab from './PastePngTab'
 import VipGate from '../VipGate'
 
 interface VipToolsProps {
@@ -22,7 +23,7 @@ export default function VipTools({
   vipChecked,
   handleVipActivated
 }: VipToolsProps): React.JSX.Element {
-  const [vipSubTab, setVipSubTab] = useState<'download' | 'transcript' | 'sfx'>('download')
+  const [vipSubTab, setVipSubTab] = useState<'download' | 'transcript' | 'sfx' | 'pastepng'>('download')
   const [downloadActiveCount, setDownloadActiveCount] = useState(0)
 
   return (
@@ -52,6 +53,13 @@ export default function VipTools({
         >
           <Music size={14} />
           <span>Kho SFX</span>
+        </button>
+        <button
+          className={`vip-sub-tab ${vipSubTab === 'pastepng' ? 'active' : ''}`}
+          onClick={() => setVipSubTab('pastepng')}
+        >
+          <FileText size={14} />
+          <span>Dán ảnh PNG</span>
         </button>
       </div>
 
@@ -109,6 +117,19 @@ export default function VipTools({
           }}
         >
           <SfxVault />
+        </div>
+
+        <div
+          className={`vip-preview-layer ${!isVipActive ? 'locked' : ''}`}
+          style={{
+            display: vipSubTab === 'pastepng' ? 'flex' : 'none',
+            height: '100%',
+            width: '100%',
+            minHeight: 0,
+            overflow: 'hidden'
+          }}
+        >
+          <PastePngTab />
         </div>
 
         {/* Lock overlay — only when not activated */}

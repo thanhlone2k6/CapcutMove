@@ -1,4 +1,4 @@
-import { app, BrowserWindow, session } from 'electron'
+import { app, BrowserWindow } from 'electron'
 import { spawn, ChildProcess } from 'child_process'
 import path from 'path'
 import fs from 'fs-extra'
@@ -262,7 +262,7 @@ async function getDouyinDirectUrl(url: string): Promise<{url: string, title?: st
     })
 
     // Deny openExternal permission to stop bitbrowser:// popup
-    hiddenWin.webContents.session.setPermissionRequestHandler((wc, permission, callback) => {
+    hiddenWin.webContents.session.setPermissionRequestHandler((_wc, permission, callback) => {
       if (permission === 'openExternal') {
         callback(false)
       } else {

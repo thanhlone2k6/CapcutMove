@@ -184,6 +184,24 @@ const api = {
   sfxEditFile: (groupId: string, fileId: string, trimStart: number, trimEnd: number, volume: number) => ipcRenderer.invoke('sfx:editFile', groupId, fileId, trimStart, trimEnd, volume),
   sfxReadFile: (filePath: string) => ipcRenderer.invoke('sfx:readFile', filePath),
 
+  // Paste PNG APIs
+  pastePng: {
+    getSettings: () => ipcRenderer.invoke('pastePng:getSettings'),
+    setEnabled: (enabled: boolean) => ipcRenderer.invoke('pastePng:setEnabled', enabled),
+    setShortcut: (shortcut: string) => ipcRenderer.invoke('pastePng:setShortcut', shortcut),
+    pasteNow: () => ipcRenderer.invoke('pastePng:pasteNow'),
+    onSuccess: (callback: (filePath: string) => void) => {
+      const sub = (_event: any, filePath: string) => callback(filePath)
+      ipcRenderer.on('pastePng:success', sub)
+      return () => ipcRenderer.removeListener('pastePng:success', sub)
+    },
+    onError: (callback: (msg: string) => void) => {
+      const sub = (_event: any, msg: string) => callback(msg)
+      ipcRenderer.on('pastePng:error', sub)
+      return () => ipcRenderer.removeListener('pastePng:error', sub)
+    }
+  },
+
   sep: process.platform === 'win32' ? '\\' : '/'
 }
 

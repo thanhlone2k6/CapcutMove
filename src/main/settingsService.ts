@@ -30,6 +30,8 @@ export interface AppSettings {
   }
   quickLinks?: QuickLinkGroup[]
   quickLinkShortcut?: string
+  pastePngEnabled?: boolean
+  pastePngShortcut?: string
 }
 
 const defaultSettings: AppSettings = {
@@ -39,7 +41,9 @@ const defaultSettings: AppSettings = {
   lastSelectedProject: '',
   lastSortMode: 'Newest First',
   lastVideoOutputDir: '',
-  videoDownloadMode: 'video'
+  videoDownloadMode: 'video',
+  pastePngEnabled: false,
+  pastePngShortcut: 'CommandOrControl+Alt+V'
 }
 
 export async function getSettings(): Promise<AppSettings> {

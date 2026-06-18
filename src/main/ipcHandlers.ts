@@ -12,6 +12,7 @@ import * as videoDownloadService from './videoDownloadService'
 import * as transcriptService from './transcriptService'
 import * as watermarkService from './watermarkService'
 import * as sfxService from './sfxService'
+import * as pastePngService from './pastePngService'
 import fs from 'fs-extra'
 import path from 'path'
 import { getAvailableName } from './utils'
@@ -477,5 +478,34 @@ export function registerIpcHandlers(
     } catch (err) {
       console.error('Failed to start drag:', err)
     }
+  })
+
+  // ─── Paste PNG Handlers ───────────────────────────────────
+  ipcMain.handle('pastePng:getSettings', async () => {
+    const settings = await settingsService.getSettings()
+    return {
+      enabled: settings.pastePngEnabled || false,
+      shortcut: settings.pastePngShortcut || 'CommandOrControl+Alt+V'
+    }
+  })
+
+  ipcMain.handle('pastePng:setEnabled', async (_, enabled: boolean) => {
+    await settingsService.saveSettings({ pastePngEnabled: enabled })
+    if (enabled) {
+      await pastePngService.registerPastePngShortcut()
+    } else {
+      pastePngService.unregisterPastePngShortcut()
+    }
+    return true
+  })
+
+  ipcMain.handle('pastePng:setShortcut', async (_, shortcut: string) => {
+    await settingsService.saveSettings({ pastePngShortcut: shortcut })
+    await pastePngService.registerPastePngShortcut(shortcut)
+    return true
+  })
+
+  ipcMain.handle('pastePng:pasteNow', async () => {
+    await pastePngService.handlePasteCommand()
   })
 }
